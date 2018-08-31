@@ -1,0 +1,24 @@
+{
+  "users": [
+    {
+      "userId": "Sunny",
+      "userKey": "12345678",
+      "imsis": [
+        {
+          "start": "12345678",
+          "end": "22345678"
+        }
+      ]
+    },
+    {
+      "userId": "Banton",
+      "userKey": "12345678",
+      "imsis": [
+        {
+          "start": "12345678",
+          "end": "22345678"
+        }
+      ]
+    }
+  ]
+}
