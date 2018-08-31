@@ -3,6 +3,7 @@
     {
       "userId": "Sunny",
       "userKey": "12345678",
+      "userType": "9",
       "imsis": [
         {
           "start": "12345678",
@@ -13,6 +14,7 @@
     {
       "userId": "Banton",
       "userKey": "12345678",
+      "userType": "0",
       "imsis": [
         {
           "start": "12345678",

@@ -40,6 +40,8 @@ if (jsonObjectUser==null){
 	out.print("no match");
 }else{
 	String userkey = (String) jsonObjectUser.get("userKey");
+	if (!isSignatureValid(signature, userId+timestamp+imsi)){
+	}
 	out.print(userkey);
 }
 

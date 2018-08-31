@@ -276,8 +276,10 @@ public String md5(String str) {
 		for (int i=0; i < barr.length; i++) {sb.append(byte2Hex(barr[i]));}
 		String hex=sb.toString();
 		md5=hex.toUpperCase();
+		if (md5==null) md5 = "";
 	}catch(Exception e){
 		e.printStackTrace();
+		return "";
 	}
 	return md5;
 }
@@ -316,4 +318,15 @@ public JSONObject getUserProfileJson(String usersFile, String userId){
 }
 
 /*********************************************************************************************************************/
+public java.lang.Boolean isSignatureValid(String signature, String sourceText) {
+	String s = md5(sourceText);
+	if (s.equals(signature)){
+		return true;
+	}else{
+		return false;
+	}
+}	//public java.lang.Boolean beEmpty(String s) {
+
+/*********************************************************************************************************************/
+
 %>
