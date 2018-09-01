@@ -1,6 +1,12 @@
 ﻿<%@ page language="java" pageEncoding="utf-8" contentType="text/html;charset=utf-8" %>
 <%!
 
+//Supplier參數
+public static final String	gcSCTUri								= "https://sim.npnchina.com/api/v1/imsi_query";
+public static final String	gcSCTAccount							= "taisys";
+public static final String	gcSCTKey								= "a02779170f1245d7dc03e39b0f1dd818";
+
+
 //系統參數
 public static final String	gcSystemUri									= "https://cms.gslssd.com/ImsiManager/";
 
@@ -8,23 +14,26 @@ public static final String	gcSystemUri									= "https://cms.gslssd.com/ImsiMan
 
 //ResultCode及ResultText定義
 public static final String	gcResultCodeSuccess						= "00000";
-public static final String	gcResultTextSuccess						= "成功";
+public static final String	gcResultTextSuccess						= "Success";
 public static final String	gcResultCodeParametersNotEnough			= "00004";
-public static final String	gcResultTextParametersNotEnough			= "輸入資料不足!";
+public static final String	gcResultTextParametersNotEnough			= "Parameter not enough";
 public static final String	gcResultCodeParametersValidationError	= "00005";
-public static final String	gcResultTextParametersValidationError	= "輸入資料錯誤!";
+public static final String	gcResultTextParametersValidationError	= "Parameter velidation failed";
 public static final String	gcResultCodeNoDataFound					= "00006";
-public static final String	gcResultTextNoDataFound					= "找不到資料!";
+public static final String	gcResultTextNoDataFound					= "No data found";
 public static final String	gcResultCodeNoLoginInfoFound			= "00007";
-public static final String	gcResultTextNoLoginInfoFound			= "無法取得您的登入帳號，可能為閒置太久，請重新登入!";
+public static final String	gcResultTextNoLoginInfoFound			= "Login account not found";
 public static final String	gcResultCodeNoPriviledge				= "00008";
-public static final String	gcResultTextNoPriviledge				= "您無權限執行此作業，或閒置過久，請重新登入!";
-public static final String	gcResultCodeWrongIdOrPassword			= "00009";
-public static final String	gcResultTextWrongIdOrPassword			= "帳號密碼有誤，請重新登入!";
-public static final String	gcResultCodeAccountWasSuspended			= "00010";
-public static final String	gcResultTextAccountWasSuspended			= "您的帳號已被停用，請洽詢客服!";
-public static final String	gcResultCodeMoreThanOneAccount			= "00011";
-public static final String	gcResultTextMoreThanOneAccount			= "您的帳號有誤(超過一筆)，請洽詢客服!";
+public static final String	gcResultTextNoPriviledge				= "No priviledge";
+public static final String	gcResultCodeInvalidSignature			= "00009";
+public static final String	gcResultTextInvalidSignature			= "Invalid signature";
+public static final String	gcResultCodeRequestTimestampIsInvalid	= "00010";
+public static final String	gcResultTextRequestTimestampIsInvalid	= "Timestamp is invalid";
+public static final String	gcResultCodeImsiApiNotSupport			= "00011";
+public static final String	gcResultTextImsiApiNotSupport			= "There is no API for this IMSI";
+public static final String	gcResultCodeApiExecutionFail			= "10001";
+public static final String	gcResultTextApiExecutionFail			= "API execution failed";
+
 public static final String	gcResultCodeDBTimeout					= "99001";
 public static final String	gcResultTextDBTimeout					= "資料庫連線失敗或逾時!";
 public static final String	gcResultCodeDBOKButMailBodyFail			= "99002";

@@ -10,6 +10,10 @@
 <%@ page import="javax.naming.InitialContext" %>
 <%@ page import="org.apache.log4j.Logger" %>
 
+<%@ page import="javax.net.ssl.*" %>
+<%@ page import="java.security.cert.*" %>
+
+
 <%@page import="org.json.simple.JSONObject" %>
 
 <%@page import="java.security.MessageDigest" %>
@@ -63,6 +67,41 @@ public String getDateTimeNow(String sDateFormat){
 }	//public String getDateTimeNow(String sDateFormat){
 
 /*********************************************************************************************************************/
+
+//取得目前系統時間，並依指定的格式產生字串
+public String getDateTimeNowGMT(String sDateFormat){
+	/************************************
+	sDateFormat:	指定的格式，例如"yyyyMMdd-HHmmss"或"yyyyMMdd"
+	*************************************/
+	String s;
+	SimpleDateFormat nowdate = new java.text.SimpleDateFormat(sDateFormat);
+	nowdate.setTimeZone(TimeZone.getTimeZone("GMT+0"));
+	s = nowdate.format(new java.util.Date());
+	return s;
+}	//public String getDateTimeNow(String sDateFormat){
+
+public String getDateTimeNowGMTMiliSec(String sDateFormat){
+	/************************************
+	sDateFormat:	指定的格式，例如"yyyyMMdd-HHmmss"或"yyyyMMdd"
+	*************************************/
+	String s;
+	String sResponse = "";
+	try{
+		SimpleDateFormat nowdate = new java.text.SimpleDateFormat(sDateFormat);
+		nowdate.setTimeZone(TimeZone.getTimeZone("GMT+0"));
+		s = nowdate.format(new java.util.Date());
+		Date d2 = nowdate.parse(s);
+		long nowMiliSec = d2.getTime();
+		sResponse = String.valueOf(nowMiliSec);
+	}catch (Exception e){
+		//return "";
+	}
+	
+	return sResponse;
+}	//public String getDateTimeNow(String sDateFormat){
+
+/*********************************************************************************************************************/
+
 //取得昨天日期
 public String getYesterday(String sDateFormat){
 	/************************************
@@ -151,6 +190,34 @@ public java.lang.Boolean isExpired(String sExpiryDate){
 		return true;
 	}
 	return bExpired;
+}
+
+/*********************************************************************************************************************/
+
+/**
+	* 數字不足部份補零回傳
+	* @param str 字串
+	* @param lenSize 字串數字最大長度,不足的部份補零
+	* @return 回傳補零後字串數字
+*/
+public String MakesUpZero(String str, int lenSize) {
+	String zero = "0000000000";
+	String returnValue = zero;
+	
+	returnValue = zero + str;
+	
+	return returnValue.substring(returnValue.length() - lenSize);
+
+}
+
+/*********************************************************************************************************************/
+
+//產生6碼的隨機數字
+public String generateRandomNumber(){
+	String txtRandom = String.valueOf(Math.round(Math.random()*1000000));
+	txtRandom = MakesUpZero(txtRandom, 6);	//不足4碼的話，將前面補0
+
+	return txtRandom;
 }
 
 /*********************************************************************************************************************/
@@ -320,13 +387,148 @@ public JSONObject getUserProfileJson(String usersFile, String userId){
 /*********************************************************************************************************************/
 public java.lang.Boolean isSignatureValid(String signature, String sourceText) {
 	String s = md5(sourceText);
-	if (s.equals(signature)){
+	if (s.equalsIgnoreCase(signature)){
 		return true;
 	}else{
+		writeLog("debug", "Invalid signature, correct signature= " + s);
 		return false;
 	}
 }	//public java.lang.Boolean beEmpty(String s) {
 
 /*********************************************************************************************************************/
+public java.lang.Boolean isTimestampValid(String timestamp, String sDateFormat) {
+	SimpleDateFormat nowdate = new java.text.SimpleDateFormat(sDateFormat);
+	nowdate.setTimeZone(TimeZone.getTimeZone("GMT+0"));
+	String sNow = nowdate.format(new java.util.Date());
+	writeLog("debug", "Current GMT+0 time= " + sNow);
+	Date d1 = null;
+	Date d2 = null;
+	try {
+	    d1 = nowdate.parse(timestamp);
+	    d2 = nowdate.parse(sNow);
+		long diff = d2.getTime() - d1.getTime();
+		long diffSeconds = diff / 1000;
+		
+		if (diffSeconds>600 || diffSeconds<-600){
+			writeLog("debug", "Invalid timestamp, the time difference in second= " + String.valueOf(diffSeconds));
+			return false;
+		}
+	} catch (Exception e) {
+		writeLog("error", "Failed to compare timestamp, error= " + e.toString());
+	    return false;
+	}
+	return true;
+}
+
+/*********************************************************************************************************************/
+public String getImsiSupplier(String suppliersFile, String imsi){
+	int		i			= 0;
+	String	suppliers	= readFileContent(suppliersFile);
+	String	tempImsiStart;
+	String	tempSupplier;
+	JSONParser	parser				= new JSONParser();
+	try {
+		Object objBody = parser.parse(suppliers);
+		JSONObject jsonObjectBody = (JSONObject) objBody;
+		JSONArray jsonSuppliers = (JSONArray) jsonObjectBody.get("suppliers");
+		JSONObject jsonObjectSupplier = null;
+
+		for (i=0; i<jsonSuppliers.size(); i++) {	//把每個人的userId找出來比對
+			jsonObjectSupplier = (JSONObject) jsonSuppliers.get(i);
+			tempImsiStart = (String) jsonObjectSupplier.get("imsiStart");
+			if (imsi.startsWith(tempImsiStart)){
+				tempSupplier = (String) jsonObjectSupplier.get("supplier");
+				writeLog("debug", "Found IMSI supplier= " + tempSupplier);
+				return tempSupplier;
+			}
+		}	//for (i=0; i<jsonEntries.size(); i++) {	//把每個人的電話號碼找出來比對
+		writeLog("debug", "找不到符合的Supplier...");
+	} catch (Exception e) {
+		writeLog("error", "getImsiSupplier error: " + e.toString());
+		return "";
+	}
+
+	return "";
+}
+
+/*********************************************************************************************************************/
+public String imsiProfileQueryForSCT(String imsi){
+	String	uri			= gcSCTUri;
+	String	account		= gcSCTAccount;
+	String	key			= gcSCTKey;
+	String	nonce		= generateRandomNumber();
+	String	timestamp	= getDateTimeNowGMTMiliSec(gcDateFormatDashYMDTime);
+	JSONObject obj=new JSONObject();
+	obj.put("imsi", imsi);
+	String	body	= obj.toString();
+	String	signature	= md5(account+nonce+timestamp+body+key);
+
+	String	sResponse	= "";
+	try
+	{
+		//因為SCT憑證有問題，所以需加入以下設定，允許SCT的不安全憑證
+		TrustManager[] trustAllCerts = new TrustManager[]{ 
+			new X509TrustManager() { 
+				public java.security.cert.X509Certificate[] getAcceptedIssuers() { 
+					 return null; 
+				} 
+				public void checkClientTrusted(X509Certificate[] certs, String authType) { 
+				} 
+				public void checkServerTrusted (X509Certificate[] certs, String authType) { 
+				} 
+			} 
+		};
+		SSLContext sc = SSLContext.getInstance("SSL"); 
+		sc.init(null, trustAllCerts, new java.security.SecureRandom()); 
+		HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory()); 
+
+		HostnameVerifier allHostsValid = new HostnameVerifier() { 
+			public boolean verify(String hostname, SSLSession session) { 
+				return true; 
+			} 
+		}; 
+
+		// set the allTrusting verifier 
+		HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+		//因為SCT憑證有問題，所以需加入以上設定，允許SCT的不安全憑證
+
+		URL u;
+		u = new URL(uri);
+		HttpsURLConnection uc = (HttpsURLConnection)u.openConnection();
+		uc.setRequestProperty ("Content-Type", "application/json");
+		uc.setRequestProperty("contentType", "utf-8");
+		uc.setRequestProperty("SCT-ACCOUNT", account);
+		uc.setRequestProperty("SCT-NONCE", nonce);
+		uc.setRequestProperty("SCT-TIMESTAMP", timestamp);
+		uc.setRequestProperty("SCT-SIGN", signature);
+		uc.setRequestMethod("POST");
+		uc.setDoOutput(true);
+		uc.setDoInput(true);
+	
+		byte[] postData = body.getBytes("UTF-8");	//避免中文亂碼問題
+		OutputStream os = uc.getOutputStream();
+		os.write(postData);
+		os.close();
+	
+		InputStream in = uc.getInputStream();
+		BufferedReader r = new BufferedReader(new InputStreamReader(in));
+		StringBuffer buf = new StringBuffer();
+		String line;
+		while ((line = r.readLine())!=null) {
+			buf.append(line);
+		}
+		in.close();
+		sResponse = buf.toString();	//取得回應值
+		writeLog("debug", "SCT server response: " + sResponse);
+	}catch (Exception e){
+		obj=new JSONObject();
+		obj.put("resultCode", gcResultCodeApiExecutionFail);
+		obj.put("resultText", gcResultTextApiExecutionFail);
+		sResponse = obj.toString();
+		writeLog("error", "Exception when send message to SCT server: " + e.toString());
+	}
+	
+	return "";
+}
 
 %>

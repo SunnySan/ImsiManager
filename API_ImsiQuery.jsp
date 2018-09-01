@@ -25,27 +25,118 @@ out.clear();	//注意，一定要有out.clear();，要不然client端無法解�
 JSONObject obj=new JSONObject();
 
 /************************************呼叫範例*******************************
-https://cms.gslssd.com/CallPro/Event_PCClientNewCDR.jsp?areacode=02&phonenumber1=26585888&accesscode=123456&callerphone=0988123456&recordtime=30&recordtimestart=2018-01-23 10:42&call_direction=0&recordfile=ringtone_04.wav&ring_time=10&talked_time=20&callername=John&calleraddr=台北市內湖區成功路四段&callercompany=Call-Pro&calleremail=hello@gmail.com
 ************************************呼叫範例*******************************/
 
-String userId		= nullToString(request.getParameter("userId"), "");
-String timestamp	= nullToString(request.getParameter("timestamp"), "");
-String imsi			= nullToString(request.getParameter("imsi"), "");
-String signature	= nullToString(request.getParameter("signature"), "");
+String 		accountId = nullToString(request.getHeader("IM-ACCOUNT"), "");
+String 		timestamp = nullToString(request.getHeader("IM-TIMESTAMP"), "");
+String 		signature = nullToString(request.getHeader("IM-SIGNATURE"), "");
 
-String USERS_JSON_FILE	= application.getRealPath("/00_users.json");
-JSONObject jsonObjectUser = getUserProfileJson(USERS_JSON_FILE, userId);
+writeLog("debug", "Receive request header, accountId= " + accountId + ",timestamp= " + timestamp + ",signature= " + signature);
 
-if (jsonObjectUser==null){
-	out.print("no match");
-}else{
-	String userkey = (String) jsonObjectUser.get("userKey");
-	if (!isSignatureValid(signature, userId+timestamp+imsi)){
-	}
-	out.print(userkey);
+InputStream	is	= null;
+String		contentStr	= "";
+
+//取得POST內容
+try {
+	is = request.getInputStream();
+	contentStr= IOUtils.toString(is, "utf-8");
+} catch (IOException e) {
+	e.printStackTrace();
+	writeLog("error", "\nUnable to get request body: " + e.toString());
+	return;
 }
 
-String s = md5("test sunny I love you");
-//writeLog("debug", "s= " + s);
-//out.print(s);
+if (beEmpty(contentStr)){
+	out.println("no content");
+	writeLog("info", "Request body is empty, quit...");
+	return;
+}else{
+	writeLog("debug", "Request body= " + contentStr);
+}
+
+String		imsi			= "";
+try{
+	JSONParser	parser			= new JSONParser();
+	Object		objBody			= parser.parse(contentStr);
+	JSONObject	jsonObjectBody	= (JSONObject) objBody;
+	imsi = (String) jsonObjectBody.get("imsi");
+}catch (Exception e) {
+	writeLog("error", "Parse request body json error: " + e.toString());
+	writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
+	obj.put("resultCode", gcResultCodeParametersNotEnough);
+	obj.put("resultText", gcResultTextParametersNotEnough);
+	out.print(obj);
+	out.flush();
+	return;
+}
+
+String	sResultCode		= gcResultCodeSuccess;
+String	sResultText		= gcResultTextSuccess;
+
+if (beEmpty(accountId) || beEmpty(timestamp) || beEmpty(imsi) || beEmpty(signature)){
+	writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
+	obj.put("resultCode", gcResultCodeParametersNotEnough);
+	obj.put("resultText", gcResultTextParametersNotEnough);
+	out.print(obj);
+	out.flush();
+	return;
+}
+
+String	USERS_JSON_FILE		= application.getRealPath("/00_users.json");
+String	SUPPLIERS_JSON_FILE	= application.getRealPath("/00_suppliers.json");
+JSONObject jsonObjectUser	= getUserProfileJson(USERS_JSON_FILE, accountId);
+
+if (jsonObjectUser==null){
+	writeLog("debug", gcResultCodeNoLoginInfoFound + ":" + gcResultTextNoLoginInfoFound);
+	obj.put("resultCode", gcResultCodeNoLoginInfoFound);
+	obj.put("resultText", gcResultTextNoLoginInfoFound);
+	out.print(obj);
+	out.flush();
+	return;
+}else{
+	//驗證簽名是否正確
+	String userkey = (String) jsonObjectUser.get("userKey");
+	if (!isSignatureValid(signature, accountId+timestamp+contentStr+userkey)){
+		writeLog("debug", "Invalid signature return " + gcResultCodeInvalidSignature + ":" + gcResultTextInvalidSignature);
+		obj.put("resultCode", gcResultCodeInvalidSignature);
+		obj.put("resultText", gcResultTextInvalidSignature);
+		out.print(obj);
+		out.flush();
+		return;
+	}
+	//out.print(userkey);
+}
+
+/* Sunny: 開發期間先不檢查 timestamp
+if (!isTimestampValid(timestamp, gcDateFormatDashYMDTime)){
+	writeLog("debug", "Invalid timestamp return " + gcResultCodeRequestTimestampIsInvalid + ":" + gcResultTextRequestTimestampIsInvalid);
+	obj.put("resultCode", gcResultCodeRequestTimestampIsInvalid);
+	obj.put("resultText", gcResultTextRequestTimestampIsInvalid);
+	out.print(obj);
+	out.flush();
+	return;
+}
+*/
+
+String imsiSupplier = getImsiSupplier(SUPPLIERS_JSON_FILE, imsi);
+if (beEmpty(imsiSupplier)){
+	writeLog("debug", "No supplier API can be found for IMSI " + imsi + ", return " + gcResultCodeImsiApiNotSupport + ":" + gcResultTextImsiApiNotSupport);
+	obj.put("resultCode", gcResultCodeImsiApiNotSupport);
+	obj.put("resultText", gcResultTextImsiApiNotSupport);
+	out.print(obj);
+	out.flush();
+	return;
+}
+
+String	imsiProfile	= "";
+if (imsiSupplier.equals("sct")) imsiProfile = imsiProfileQueryForSCT(imsi);
+
+if (beEmpty(imsiProfile)){
+	obj.put("resultCode", gcResultCodeApiExecutionFail);
+	obj.put("resultText", gcResultTextApiExecutionFail);
+	out.print(obj);
+}else{
+	out.print(imsiProfile);
+}
+
 %>
