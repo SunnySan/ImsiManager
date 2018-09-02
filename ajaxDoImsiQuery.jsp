@@ -53,12 +53,16 @@ if (beEmpty(sLoginUserAccountId)){
 	return;
 }
 
-String imsiQueryApiUri = "";
+String imsiQueryApiUri = gcSystemUri + "API_ImsiQuery.jsp";
+/* 以下的作法在 cms.gslssd.com 不 work
 if (request.getServerPort()==80){
 	imsiQueryApiUri = request.getScheme() + "://" + request.getServerName() + "/ImsiManager/API_ImsiQuery.jsp";
 }else{
 	imsiQueryApiUri = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + "/ImsiManager/API_ImsiQuery.jsp";
 }
+*/
+
+writeLog("debug", "My IMSI query API URL= " + imsiQueryApiUri);
 
 String	USERS_JSON_FILE		= application.getRealPath("/00_users.json");
 JSONObject jsonObjectUser	= getUserProfileJson(USERS_JSON_FILE, sLoginUserAccountId);
@@ -74,52 +78,54 @@ if (jsonObjectUser==null){
 	userkey = (String) jsonObjectUser.get("userKey");
 }
 
-	String	account		= sLoginUserAccountId;
-	String	key			= userkey;
-	String	timestamp	= getDateTimeNowGMT(gcDateFormatDashYMDTime);
-	JSONObject objTemp=new JSONObject();
-	objTemp.put("imsi", imsi);
-	String	body	= objTemp.toString();
-	String	signature	= md5(account+timestamp+body+key);
+String	account		= sLoginUserAccountId;
+String	key			= userkey;
+String	timestamp	= getDateTimeNowGMT(gcDateFormatDashYMDTime);
+JSONObject objTemp=new JSONObject();
+objTemp.put("imsi", imsi);
+String	body	= objTemp.toString();
+String	signature	= md5(account+timestamp+body+key);
 
-	String	sResponse	= "";
-	try
-	{
+String	sResponse	= "";
+try
+{
 
-		URL u;
-		u = new URL(imsiQueryApiUri);
-		HttpURLConnection uc = (HttpURLConnection)u.openConnection();
-		uc.setRequestProperty ("Content-Type", "application/json");
-		uc.setRequestProperty("contentType", "utf-8");
-		uc.setRequestProperty("IM-ACCOUNT", account);
-		uc.setRequestProperty("IM-TIMESTAMP", timestamp);
-		uc.setRequestProperty("IM-SIGNATURE", signature);
-		uc.setRequestMethod("POST");
-		uc.setDoOutput(true);
-		uc.setDoInput(true);
-	
-		byte[] postData = body.getBytes("UTF-8");	//避免中文亂碼問題
-		OutputStream os = uc.getOutputStream();
-		os.write(postData);
-		os.close();
-	
-		InputStream in = uc.getInputStream();
-		BufferedReader r = new BufferedReader(new InputStreamReader(in));
-		StringBuffer buf = new StringBuffer();
-		String line;
-		while ((line = r.readLine())!=null) {
-			buf.append(line);
-		}
-		in.close();
-		sResponse = buf.toString();	//取得回應值
-		writeLog("debug", "My IMSI query server response: " + sResponse);
-	}catch (Exception e){
-		objTemp=new JSONObject();
-		objTemp.put("resultCode", gcResultCodeApiExecutionFail);
-		objTemp.put("resultText", gcResultTextApiExecutionFail);
-		sResponse = objTemp.toString();
-		writeLog("error", "Exception when send message to my IMSI query server: " + e.toString());
+	URL u;
+	u = new URL(imsiQueryApiUri);
+	HttpURLConnection uc = (HttpURLConnection)u.openConnection();
+	uc.setRequestProperty ("Content-Type", "application/json");
+	uc.setRequestProperty("contentType", "utf-8");
+	uc.setRequestProperty("IM-ACCOUNT", account);
+	uc.setRequestProperty("IM-TIMESTAMP", timestamp);
+	uc.setRequestProperty("IM-SIGNATURE", signature);
+	uc.setRequestMethod("POST");
+	uc.setDoOutput(true);
+	uc.setDoInput(true);
+
+	byte[] postData = body.getBytes("UTF-8");	//避免中文亂碼問題
+	OutputStream os = uc.getOutputStream();
+	os.write(postData);
+	os.close();
+
+	InputStream in = uc.getInputStream();
+	BufferedReader r = new BufferedReader(new InputStreamReader(in));
+	StringBuffer buf = new StringBuffer();
+	String line;
+	while ((line = r.readLine())!=null) {
+		buf.append(line);
 	}
+	in.close();
+	sResponse = buf.toString();	//取得回應值
+	writeLog("debug", "My IMSI query server response: " + sResponse);
+}catch (Exception e){
+	objTemp=new JSONObject();
+	objTemp.put("resultCode", gcResultCodeApiExecutionFail);
+	objTemp.put("resultText", gcResultTextApiExecutionFail);
+	sResponse = objTemp.toString();
+	writeLog("error", "Exception when send message to my IMSI query server: " + e.toString());
+}
+
+
 
 if (beEmpty(sResponse)){
 	obj.put("resultCode", gcResultCodeUnknownError);

@@ -370,7 +370,7 @@ public JSONObject getUserProfileJson(String usersFile, String userId){
 		JSONObject jsonObjectBody = (JSONObject) objBody;
 		JSONArray jsonUsers = (JSONArray) jsonObjectBody.get("users");
 		JSONObject jsonObjectUser = null;
-
+		
 		for (i=0; i<jsonUsers.size(); i++) {	//把每個人的userId找出來比對
 			jsonObjectUser = (JSONObject) jsonUsers.get(i);
 			tempUserId = (String) jsonObjectUser.get("userId");
@@ -520,6 +520,61 @@ public String imsiProfileQueryForSCT(String imsi){
 		in.close();
 		sResponse = buf.toString();	//取得回應值
 		writeLog("debug", "SCT server response: " + sResponse);
+		
+		
+		JSONParser	parser	= new JSONParser();
+		Object objResponseBody = parser.parse(sResponse);
+		JSONObject jsonObjectResponseBody = (JSONObject) objResponseBody;
+		int resResult = ((Long)jsonObjectResponseBody.get("result")).intValue();
+		if (resResult!=0){	//失敗
+			sResponse = "";
+		}else{	//成功，把supplier回覆的內容轉成我們回覆給client端的格式
+			obj=new JSONObject();
+			obj.put("resultCode", gcResultCodeSuccess);
+			obj.put("resultText", gcResultTextSuccess);
+			int resStatus = ((Long)jsonObjectResponseBody.get("status")).intValue();
+			obj.put("imsiStatus", String.valueOf(resStatus));
+			List	l1	= new LinkedList();
+			Map		m1	= null;
+			int		i	= 0;
+			int		pkgPackageId	= 0;
+			int		pkgProductId	= 0;
+			int		pkgStatus		= 0;
+			int		pkgTotal		= 0;
+			int		pkgUsage		= 0;
+			int		pkgToday		= 0;
+			String	pkgExpiryTime	= "";
+			int		pkgDays			= 0;
+			String	pkgOpenTime		= "";
+			JSONArray jsonPackages = (JSONArray) jsonObjectResponseBody.get("packages");
+			JSONObject jsonObjectPackage = null;
+			for (i=0; i<jsonPackages.size(); i++) {	//把每個人的userId找出來比對
+				jsonObjectPackage = (JSONObject) jsonPackages.get(i);
+				pkgPackageId = ((Long)jsonObjectPackage.get("packageId")).intValue();
+				pkgProductId = ((Long)jsonObjectPackage.get("productId")).intValue();
+				pkgStatus = ((Long)jsonObjectPackage.get("status")).intValue();
+				pkgTotal = ((Long)jsonObjectPackage.get("total")).intValue();
+				pkgUsage = ((Long)jsonObjectPackage.get("usage")).intValue();
+				pkgToday = ((Long)jsonObjectPackage.get("today")).intValue();
+				pkgExpiryTime = (String) jsonObjectPackage.get("expiryTime");
+				pkgDays = ((Long)jsonObjectPackage.get("days")).intValue();
+				pkgOpenTime = (String) jsonObjectPackage.get("openTime");
+				m1 = new HashMap();
+				m1.put("packageId", nullToString(String.valueOf(pkgPackageId), ""));
+				m1.put("productId", nullToString(String.valueOf(pkgProductId), ""));
+				m1.put("status", nullToString(String.valueOf(pkgStatus), ""));
+				m1.put("total", nullToString(String.valueOf(pkgTotal), ""));
+				m1.put("usage", nullToString(String.valueOf(pkgUsage), ""));
+				m1.put("today", nullToString(String.valueOf(pkgToday), ""));
+				m1.put("expiryTime", nullToString(pkgExpiryTime, ""));
+				m1.put("days", nullToString(String.valueOf(pkgDays), ""));
+				m1.put("openTime", nullToString(pkgOpenTime, ""));
+				l1.add(m1);
+			}	//for (i=0; i<jsonEntries.size(); i++) {	//把每個人的電話號碼找出來比對
+			obj.put("packages", l1);
+			sResponse = obj.toString();
+			writeLog("debug", "Respond to client: " + sResponse);
+		}
 	}catch (Exception e){
 		obj=new JSONObject();
 		obj.put("resultCode", gcResultCodeApiExecutionFail);

@@ -171,6 +171,9 @@
 				</div><!-- /.box-header -->
 
 				<div class="box-body">
+					<div class="form-group">
+						<label>IMSI Status:&nbsp;<span id="imsiStatus"></span></label>
+					</div>
 				</div><!-- /.box-body -->
 
 				<div class="box-footer">
@@ -220,8 +223,9 @@
 	function doQuery(){
 		event.preventDefault();
 		var sData = "";
-		var imsi = $("#imsi").val();
+		var imsi = $('#imsi').val();
 		
+		$('#imsiStatus').text("");
 		if (beEmpty(imsi)){
 			msgBox2("Please enter IMSI number");
 			return;
@@ -229,13 +233,13 @@
 		
 		sData = "imsi=" + imsi;
 		getDataFromServer("ajaxDoImsiQuery.jsp", sData, "json", function(data){
-			alert(JSON.stringify(data));
 			if (!data.resultCode || !data.resultText){
 				msgBox2("Unable to get process result!");
 				return;
 			}else{
 				if (data.resultCode=="00000"){
-					msgBox2(JSON.stringify(data));
+					//msgBox2(JSON.stringify(data));
+					$('#imsiStatus').text(data.imsiStatus);
 				}else{
 					msgBox2("Process failed:<br>" + data.resultText);
 				}

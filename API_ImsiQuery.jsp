@@ -107,7 +107,6 @@ if (jsonObjectUser==null){
 	//out.print(userkey);
 }
 
-/* Sunny: 開發期間先不檢查 timestamp
 if (!isTimestampValid(timestamp, gcDateFormatDashYMDTime)){
 	writeLog("debug", "Invalid timestamp return " + gcResultCodeRequestTimestampIsInvalid + ":" + gcResultTextRequestTimestampIsInvalid);
 	obj.put("resultCode", gcResultCodeRequestTimestampIsInvalid);
@@ -116,7 +115,7 @@ if (!isTimestampValid(timestamp, gcDateFormatDashYMDTime)){
 	out.flush();
 	return;
 }
-*/
+
 
 String imsiSupplier = getImsiSupplier(SUPPLIERS_JSON_FILE, imsi);
 if (beEmpty(imsiSupplier)){
