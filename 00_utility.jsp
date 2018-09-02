@@ -528,7 +528,7 @@ public String imsiProfileQueryForSCT(String imsi){
 		writeLog("error", "Exception when send message to SCT server: " + e.toString());
 	}
 	
-	return "";
+	return sResponse;
 }
 
 %>

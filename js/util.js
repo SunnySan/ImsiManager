@@ -159,6 +159,8 @@ function setLocalValue(key, value, expires){	//若expires為空值，則僅存�
 
 /**********顯示類似alert的message box**********/
 function msgBox(msg, callbackClose){
+	msgBox2(msg);
+	return;
 	if ( typeof(dialogMessage) == "undefined"){
 		$('body').append('<div id="dialogMessage" title="System Info."></div>');
 	}
@@ -265,14 +267,7 @@ function getDataFromServer(sProgram, sData, sResponseType, SuccessCallback, bBlo
 }	//function sServerBaseURL(sProgram, sData, sResponseType, SuccessCallback){
 
 function clearCookie(){	//清除 cookie 中的登入資料
-	setLocalValue("Account_Sequence", "");
-	setLocalValue("Account_Name", "");
-	setLocalValue("Account_Type", "");
-	setLocalValue("Bill_Type", "");
-	setLocalValue("Audit_Phone_Number", "");
-	setLocalValue("Google_ID", "");
-	setLocalValue("Google_User_Name", "");
-	setLocalValue("Google_User_Picture_URL", "");
+	setLocalValue("IM_Account", "");
 	return true;
 }
 
@@ -281,79 +276,18 @@ function doLogout(){
 	clearCookie();
 	var sData = "";
 	getDataFromServer("ajaxDoLogout.jsp", sData, "json", function(data){
-		location.href = "/index.html";
+		location.href = "./login.html";
 	});	//getDataFromServer("xxx.jsp", sData, "json", function(data){
-}
-
-//將 Status 欄位的英文轉成中文
-function translateStatus(Status){
-	var s = Status;
-	if (s=="Active"){
-		s="正常";
-	}else if (s=="Suspend"){
-		s="停用";
-	}else if (s=="Unfollow"){
-		s="未加入LINE";
-	}else if (s=="Google"){
-		s="待Google綁定";
-	}else if (s=="Init"){
-		s="初始中";
-	}else if (s=="Delete"){
-		s="已刪除";
-	}
-	return s;
-}
-
-//將電話主人類別轉成中文
-function translateBillType(Bill_Type){
-	var s = Bill_Type;
-	if (s=="A"){
-		s="進階版";
-	}else if (s=="B"){
-		s="入門版";
-	}
-	return s;
 }
 
 //在頁面填入一些預設值
 function pageInit(){
-	var myGoogleId = getLocalValue("Google_ID");
-	var myAccountType = getLocalValue("Account_Type");
-	var myAccountName = getLocalValue("Account_Name");
-	var myGoogleName = getLocalValue("Google_User_Name");
-	var myGooglePicture = getLocalValue("Google_User_Picture_URL");
-	var myAuditPhoneNumber = getLocalValue("Audit_Phone_Number");
-	if (beEmpty(myGoogleId) || beEmpty(myAccountType)){
-		var me = window.location.pathname;
-		var i = me.lastIndexOf("/");
-		me = me.substring(i+1);	//目前的網頁名稱
-		var s = "";
-		if (me=="AdmOwnerCallLog.html"){
-			var callerPhoneNumber = getParameterByName("callerPhoneNumber");
-			if (notEmpty(callerPhoneNumber)) s = "?callerPhoneNumber=" + callerPhoneNumber;
-		}
-		alert("無法取得您的登入資訊，請重新登入!");
-		location.href = "login_simple.html" + s;
+	var myAccountId = getLocalValue("IM_Account");
+	if (beEmpty(myAccountId)){
+		//alert("Unable to find your login information, please login first!");
+		location.href = "login.html";
 	}
-	
-	if (beEmpty(myAccountName)) myAccountName = "無法取得註冊名稱";
-	if (beEmpty(myGoogleName)) myGoogleName = "請問您貴姓大名？";
-	if (beEmpty(myGooglePicture)) myGooglePicture = "images/JohnDoe.jpg";
-	
-	$('.sys-user-image').attr('src', myGooglePicture);
-	if (beEmpty(myAuditPhoneNumber)){
-		$('.sys-user-name').text(myGoogleName);
-	}else{
-		$('.sys-user-name').text(myAuditPhoneNumber);
-	}
-	$('.sys-user-account-name').text(myAccountName);
-	var myType = "歡迎您";
-	if (myAccountType=="A") myType = "系統管理者";
-	if (myAccountType=="D") myType = "加盟商您好!";
-	if (myAccountType=="O" || myAccountType=="T") myType = "電話主人您好!";
-	$('#sys-account-type').text(" " + myType);
-	
-	generateMainMenu();
+	$('.sys_user_name').text(myAccountId);
 }
 
 //產生主選單

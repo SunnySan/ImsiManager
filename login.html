@@ -79,6 +79,7 @@
 <script src="./bower_components/bootstrap/dist/js/bootstrap.min.js"></script><!-- Bootstrap 3.3.7 -->
 <script src="./plugins/iCheck/icheck.min.js"></script><!-- iCheck -->
 
+<script type="text/javascript" src="js/jquery.cookie.js"></script>
 <script type="text/javascript" src="js/jquery.blockUI.js"></script>
 <script type="text/javascript" src="js/util.js"></script>
 
@@ -90,15 +91,23 @@
 			increaseArea: '20%' /* optional */
 		});
 		$('#account').trigger('focus');
+
+		$(".login-box").keypress(function(event) {
+			if (event.which == 13) {
+				event.preventDefault();
+				doLogin();
+			}
+		});
 	});
 	
 	function doLogin(){
+		event.preventDefault();
 		var sData = "";
 		var account = $("#account").val();
 		var password = $("#password").val();
 		
 		if (beEmpty(account) || beEmpty(password)){
-			msgBox("Please enter your ID and password", showme);
+			msgBox2("Please enter your ID and password");
 			return;
 		}
 		
@@ -106,34 +115,18 @@
 		sData += "&password=" + password;
 		getDataFromServer("ajaxDoLogin.jsp", sData, "json", function(data){
 			if (!data.resultCode || !data.resultText){
-				msgBox("無法取得執行結果!");
-				$('#btnLogin').prop("disabled",false);
-				$('#login-box').show();
-				$('#select-account-box').hide();
+				msgBox2("Unable to get process result!");
 				return;
 			}else{
 				if (data.resultCode=="00000"){
-					setLocalValue("Account_Sequence", data.Account_Sequence);
-					setLocalValue("Account_Name", data.Account_Name);
-					setLocalValue("Account_Type", data.Account_Type);
-					setLocalValue("Bill_Type", data.Bill_Type);
-					setLocalValue("Audit_Phone_Number", data.Audit_Phone_Number);
-					setLocalValue("Google_ID", data.Google_ID);
-					setLocalValue("Google_User_Name", data.Google_User_Name);
-					setLocalValue("Google_User_Picture_URL", data.Google_User_Picture_URL);
-					gotoAdmHomePage(data.Account_Type);
+					setLocalValue("IM_Account", data.accountId);
+					location.href="index.html";
 				}else{
-					msgBox("帳號檢查失敗:<br>" + data.resultText);
-					$('#btnLogin').prop("disabled",false);
-					$('#login-box').show();
-					$('#select-account-box').hide();
+					msgBox2("Login failed:<br>" + data.resultText);
 				}
 			}
 
 		});	//getDataFromServer("xxx.jsp", sData, "json", function(data){
 	}
 	
-	function showme(){
-		alert("showme");
-	}
 </script>

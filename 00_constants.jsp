@@ -22,7 +22,7 @@ public static final String	gcResultTextParametersValidationError	= "Parameter ve
 public static final String	gcResultCodeNoDataFound					= "00006";
 public static final String	gcResultTextNoDataFound					= "No data found";
 public static final String	gcResultCodeNoLoginInfoFound			= "00007";
-public static final String	gcResultTextNoLoginInfoFound			= "Login account not found";
+public static final String	gcResultTextNoLoginInfoFound			= "Login account not found or session expired, please login again";
 public static final String	gcResultCodeNoPriviledge				= "00008";
 public static final String	gcResultTextNoPriviledge				= "No priviledge";
 public static final String	gcResultCodeInvalidSignature			= "00009";
@@ -31,6 +31,8 @@ public static final String	gcResultCodeRequestTimestampIsInvalid	= "00010";
 public static final String	gcResultTextRequestTimestampIsInvalid	= "Timestamp is invalid";
 public static final String	gcResultCodeImsiApiNotSupport			= "00011";
 public static final String	gcResultTextImsiApiNotSupport			= "There is no API for this IMSI";
+public static final String	gcResultCodePasswordIsIncorrect			= "00012";
+public static final String	gcResultTextPasswordIsIncorrect			= "Password is incorrect.";
 public static final String	gcResultCodeApiExecutionFail			= "10001";
 public static final String	gcResultTextApiExecutionFail			= "API execution failed";
 
