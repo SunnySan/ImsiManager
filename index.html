@@ -134,7 +134,7 @@
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
 				<h4><i class="icon fa fa-info"></i>&nbsp;Usage</h4>
 				<ol>
-					<li>Input IMSI number and click Query button.</li>
+					<li>Input IMSI or ICCID number and click Query button.</li>
 				</ol>
 			</div>
               		
@@ -189,7 +189,10 @@
 
 				<div class="box-body">
 					<div class="form-group">
-						<h2>IMSI Status:&nbsp;<span id="imsiStatus" style="color:#FF0000;"></span></h2>
+						<h3>IMSI Type:&nbsp;<span id="imsiType" style="color:#FF0000;"></span></h3>
+					</div>
+					<div class="form-group">
+						<h3>IMSI Status:&nbsp;<span id="imsiStatus" style="color:#FF0000;"></span></h3>
 					</div>
 
 					<table id="simInfoTable" class="table table-bordered table-hover">
@@ -257,7 +260,6 @@
 <script src="./dist/js/adminlte.min.js"></script><!-- AdminLTE App -->
 
 <script type="text/javascript" src="js/jquery.cookie.js"></script>
-<script type="text/javascript" src="js/jquery.blockUI.js"></script>
 <script type="text/javascript" src="js/util.js"></script>
 
 <script>
@@ -294,7 +296,9 @@
 		var imsi = $('#imsi').val();
 		var iccid = $('#iccid').val();
 		
+		$('#imsiType').text("");
 		$('#imsiStatus').text("");
+		
 		if ($.fn.dataTable.isDataTable(table) ) table.clear().draw();
 		
 		if (beEmpty(imsi) && beEmpty(iccid)){
@@ -316,49 +320,18 @@
 					//msgBox2(JSON.stringify(data));
 					$('#imsiStatus').text(translateImsiStatus(data.imsiStatus));
 
-					s = "";
-					$.each( data.packages, function(i, r) {
-						r.packageStatus = translatePackageStatus(r.packageStatus);
-						r.totalDataVolume = toCurrency(r.totalDataVolume);
-						r.allUsedVolume = toCurrency(r.allUsedVolume);
-					});	//$.each( data.orders, function(i, r) {
-					
-					tableData = data;
-					if ($.fn.dataTable.isDataTable(table) ){
-						table.destroy();
+					var imsiType = "";
+					imsiType = data.imsiType;
+					if (notEmpty(imsiType) && imsiType=="Prepaid"){
+						$('#imsiType').text(imsiType);
+						displayPrepaidImsiInfo(data);
+						return;
 					}
-					table = $('#simInfoTable').DataTable( {
-						'paging'      : true,
-						'lengthChange': false,
-						'searching'   : false,
-						'ordering'    : true,
-						'info'        : true,
-						'autoWidth'   : true,
-						responsive: true,
-						columnDefs: [
-							{ responsivePriority: 1, targets: 2 },
-							{ responsivePriority: 1, targets: 3 }
-						],
-						data: tableData.packages,
-						columns: [
-							{ data: 'packageId' },
-							{ data: 'packageStatus' },
-							{ data: 'totalDataVolume' },
-							{ data: 'allUsedVolume' },
-							{ data: 'firstUsageTime' },
-							{ data: 'expiryTime' },
-							{ data: 'validityDays' }
-						],
-						order: [[ 4, 'desc' ]],
-						"createdRow": function ( row, data, index ) {
-							$('td', row).eq(1).addClass('highlight');
-						}
-					} );
-
-					$('html, body').animate({
-						scrollTop: $("#simInfoBox").offset().top
-					}, 1000);
-
+					if (notEmpty(imsiType) && imsiType=="IoT"){
+						$('#imsiType').text(imsiType);
+						displayIoTImsiInfo(data);
+						return;
+					}
 				}else{
 					msgBox2("Process failed:<br>" + data.resultText);
 				}
@@ -368,24 +341,73 @@
 		});	//getDataFromServer("xxx.jsp", sData, "json", function(data){
 	}
 	
+	function displayPrepaidImsiInfo(data){
+		$.each( data.packages, function(i, r) {
+			r.packageStatus = translatePackageStatus(r.packageStatus);
+			r.totalDataVolume = toCurrency(r.totalDataVolume);
+			r.allUsedVolume = toCurrency(r.allUsedVolume);
+		});	//$.each( data.orders, function(i, r) {
+		
+		tableData = data;
+		if ($.fn.dataTable.isDataTable(table) ){
+			table.destroy();
+		}
+		table = $('#simInfoTable').DataTable( {
+			'paging'      : true,
+			'lengthChange': false,
+			'searching'   : false,
+			'ordering'    : true,
+			'info'        : true,
+			'autoWidth'   : true,
+			responsive: true,
+			columnDefs: [
+				{ responsivePriority: 1, targets: 2 },
+				{ responsivePriority: 1, targets: 3 }
+			],
+			data: tableData.packages,
+			columns: [
+				{ data: 'packageId' },
+				{ data: 'packageStatus' },
+				{ data: 'totalDataVolume' },
+				{ data: 'allUsedVolume' },
+				{ data: 'firstUsageTime' },
+				{ data: 'expiryTime' },
+				{ data: 'validityDays' }
+			],
+			order: [[ 4, 'desc' ]],
+			"createdRow": function ( row, data, index ) {
+				$('td', row).eq(1).addClass('highlight');
+			}
+		} );
+
+		$('html, body').animate({
+			scrollTop: $("#simInfoBox").offset().top
+		}, 1000);
+
+		$('.overlay').hide();
+	}
+
+	function displayIoTImsiInfo(data){
+	}
+
 	function translateImsiStatus(status){
 		var s = status;
 		if (status=="0") s = "No package";
 		if (status=="1") s = "Not activated";
 		if (status=="2") s = "Activated";
-		if (status=="3") s = "Freeze";
-		if (status=="4") s = "Destroyed";
+		if (status=="3") s = "Freeze";	//going to be terminated
+		if (status=="4") s = "Terminated";
 		if (status=="9") s = "Suspended";
 		return s;
 	}
 
 	function translatePackageStatus(status){
 		var s = status;
-		if (status=="0") s = "Inactive";
+		if (status=="0") s = "Not activated";
 		if (status=="1") s = "Activated";
 		if (status=="2") s = "Expired";
-		if (status=="3") s = "Closed";
-		if (status=="4") s = "Closing";
+		if (status=="3") s = "Closed";	//run out data, user has to purchase new package in this phase
+		if (status=="4") s = "Closing";	//run out data, going to be closed, user can topup in this phase
 		return s;
 	}
 </script>

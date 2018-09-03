@@ -588,6 +588,7 @@ public String imsiProfileQueryForSCT(String imsi, String timezone){
 			obj.put("resultText", gcResultTextSuccess);
 			int resStatus = ((Long)jsonObjectResponseBody.get("status")).intValue();
 			obj.put("imsiStatus", String.valueOf(resStatus));
+			obj.put("imsiType", "Prepaid");
 			List	l1	= new LinkedList();
 			Map		m1	= null;
 			int		i	= 0;
