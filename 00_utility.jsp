@@ -102,6 +102,25 @@ public String getDateTimeNowGMTMiliSec(String sDateFormat){
 
 /*********************************************************************************************************************/
 
+//將轉換某個時間的時區
+public String changeTimezoneForADate(String sOldDate, String sOldDateFormat, String sNewDateFormat, String hourDiff){
+	String s;
+	String sResponse = "";
+	try{
+		SimpleDateFormat nowdate = new java.text.SimpleDateFormat(sOldDateFormat);
+		Date dOld = nowdate.parse(sOldDate);
+		Date dNew = new Date(dOld.getTime() + Long.parseLong(hourDiff) * 3600 * 1000);	//Milisecond
+		nowdate = new java.text.SimpleDateFormat(sNewDateFormat);
+		sResponse = nowdate.format(dNew);;
+	}catch (Exception e){
+		//return "";
+	}
+	
+	return sResponse;
+}
+
+/*********************************************************************************************************************/
+
 //取得昨天日期
 public String getYesterday(String sDateFormat){
 	/************************************
@@ -421,10 +440,11 @@ public java.lang.Boolean isTimestampValid(String timestamp, String sDateFormat) 
 }
 
 /*********************************************************************************************************************/
-public String getImsiSupplier(String suppliersFile, String imsi){
+public String getImsiSupplier(String suppliersFile, String imsi, String iccid){
 	int		i			= 0;
 	String	suppliers	= readFileContent(suppliersFile);
 	String	tempImsiStart;
+	String	tempIccidStart;
 	String	tempSupplier;
 	JSONParser	parser				= new JSONParser();
 	try {
@@ -435,10 +455,25 @@ public String getImsiSupplier(String suppliersFile, String imsi){
 
 		for (i=0; i<jsonSuppliers.size(); i++) {	//把每個人的userId找出來比對
 			jsonObjectSupplier = (JSONObject) jsonSuppliers.get(i);
-			tempImsiStart = (String) jsonObjectSupplier.get("imsiStart");
-			if (imsi.startsWith(tempImsiStart)){
+			try{
+				tempImsiStart = (String) jsonObjectSupplier.get("imsiStart");
+			}catch (Exception e){
+				tempImsiStart = "";
+			}
+			try{
+				tempIccidStart = (String) jsonObjectSupplier.get("iccidStart");
+			}catch (Exception e){
+				tempIccidStart = "";
+			}
+
+			if (notEmpty(imsi) && notEmpty(tempImsiStart) && imsi.startsWith(tempImsiStart)){
 				tempSupplier = (String) jsonObjectSupplier.get("supplier");
 				writeLog("debug", "Found IMSI supplier= " + tempSupplier);
+				return tempSupplier;
+			}
+			if (notEmpty(iccid) && notEmpty(tempIccidStart) && iccid.startsWith(tempIccidStart)){
+				tempSupplier = (String) jsonObjectSupplier.get("supplier");
+				writeLog("debug", "Found ICCID supplier= " + tempSupplier);
 				return tempSupplier;
 			}
 		}	//for (i=0; i<jsonEntries.size(); i++) {	//把每個人的電話號碼找出來比對
@@ -452,16 +487,18 @@ public String getImsiSupplier(String suppliersFile, String imsi){
 }
 
 /*********************************************************************************************************************/
-public String imsiProfileQueryForSCT(String imsi){
+public String imsiProfileQueryForSCT(String imsi, String timezone){
 	String	uri			= gcSCTUri;
 	String	account		= gcSCTAccount;
 	String	key			= gcSCTKey;
 	String	nonce		= generateRandomNumber();
-	String	timestamp	= getDateTimeNowGMTMiliSec(gcDateFormatDashYMDTime);
+	//String	timestamp	= getDateTimeNowGMTMiliSec(gcDateFormatDashYMDTime);
+	String	timestamp	= getDateTimeNow(gcDateFormatDashYMDTime);
 	JSONObject obj=new JSONObject();
 	obj.put("imsi", imsi);
 	String	body	= obj.toString();
 	String	signature	= md5(account+nonce+timestamp+body+key);
+	signature = signature.toLowerCase();
 
 	String	sResponse	= "";
 	try
@@ -493,6 +530,11 @@ public String imsiProfileQueryForSCT(String imsi){
 		//因為SCT憑證有問題，所以需加入以上設定，允許SCT的不安全憑證
 
 		URL u;
+		writeLog("debug", "Data to be sent to SCT, SCT-ACCOUNT= " + account);
+		writeLog("debug", "Data to be sent to SCT, SCT-NONCE= " + nonce);
+		writeLog("debug", "Data to be sent to SCT, SCT-TIMESTAMP= " + timestamp);
+		writeLog("debug", "Data to be sent to SCT, SCT-SIGN= " + signature);
+		writeLog("debug", "Data to be sent to SCT, POSTDATA= " + body);
 		u = new URL(uri);
 		HttpsURLConnection uc = (HttpsURLConnection)u.openConnection();
 		uc.setRequestProperty ("Content-Type", "application/json");
@@ -505,7 +547,10 @@ public String imsiProfileQueryForSCT(String imsi){
 		uc.setDoOutput(true);
 		uc.setDoInput(true);
 	
-		byte[] postData = body.getBytes("UTF-8");	//避免中文亂碼問題
+		//byte[] postData = body.getBytes("UTF-8");	//避免中文亂碼問題
+		byte[] postData = body.getBytes();	//避免中文亂碼問題
+		//String strPostData = new String(postData);
+		//writeLog("debug", "Data to be sent to SCT, POSTDATA bytes= " + strPostData);
 		OutputStream os = uc.getOutputStream();
 		os.write(postData);
 		os.close();
@@ -526,10 +571,19 @@ public String imsiProfileQueryForSCT(String imsi){
 		Object objResponseBody = parser.parse(sResponse);
 		JSONObject jsonObjectResponseBody = (JSONObject) objResponseBody;
 		int resResult = ((Long)jsonObjectResponseBody.get("result")).intValue();
+		obj=new JSONObject();
 		if (resResult!=0){	//失敗
 			sResponse = "";
+			if (resResult==139){
+				obj.put("resultCode", gcResultCodeApiNotOurImsi);
+				obj.put("resultText", gcResultTextApiNotOurImsi);
+				sResponse = obj.toString();
+			}else if (resResult==213){
+				obj.put("resultCode", gcResultCodeApiInvalidImsi);
+				obj.put("resultText", gcResultTextApiInvalidImsi);
+				sResponse = obj.toString();
+			}
 		}else{	//成功，把supplier回覆的內容轉成我們回覆給client端的格式
-			obj=new JSONObject();
 			obj.put("resultCode", gcResultCodeSuccess);
 			obj.put("resultText", gcResultTextSuccess);
 			int resStatus = ((Long)jsonObjectResponseBody.get("status")).intValue();
@@ -537,44 +591,55 @@ public String imsiProfileQueryForSCT(String imsi){
 			List	l1	= new LinkedList();
 			Map		m1	= null;
 			int		i	= 0;
-			int		pkgPackageId	= 0;
-			int		pkgProductId	= 0;
-			int		pkgStatus		= 0;
-			int		pkgTotal		= 0;
-			int		pkgUsage		= 0;
-			int		pkgToday		= 0;
+			Long		pkgPackageId	;
+			Long		pkgProductId	;
+			Long		pkgStatus		;
+			Long		pkgTotal		;
+			Long		pkgUsage		;
+			Long		pkgToday		;
 			String	pkgExpiryTime	= "";
-			int		pkgDays			= 0;
+			Long		pkgDays			;
 			String	pkgOpenTime		= "";
-			JSONArray jsonPackages = (JSONArray) jsonObjectResponseBody.get("packages");
-			JSONObject jsonObjectPackage = null;
-			for (i=0; i<jsonPackages.size(); i++) {	//把每個人的userId找出來比對
-				jsonObjectPackage = (JSONObject) jsonPackages.get(i);
-				pkgPackageId = ((Long)jsonObjectPackage.get("packageId")).intValue();
-				pkgProductId = ((Long)jsonObjectPackage.get("productId")).intValue();
-				pkgStatus = ((Long)jsonObjectPackage.get("status")).intValue();
-				pkgTotal = ((Long)jsonObjectPackage.get("total")).intValue();
-				pkgUsage = ((Long)jsonObjectPackage.get("usage")).intValue();
-				pkgToday = ((Long)jsonObjectPackage.get("today")).intValue();
-				pkgExpiryTime = (String) jsonObjectPackage.get("expiryTime");
-				pkgDays = ((Long)jsonObjectPackage.get("days")).intValue();
-				pkgOpenTime = (String) jsonObjectPackage.get("openTime");
-				m1 = new HashMap();
-				m1.put("packageId", nullToString(String.valueOf(pkgPackageId), ""));
-				m1.put("productId", nullToString(String.valueOf(pkgProductId), ""));
-				m1.put("status", nullToString(String.valueOf(pkgStatus), ""));
-				m1.put("total", nullToString(String.valueOf(pkgTotal), ""));
-				m1.put("usage", nullToString(String.valueOf(pkgUsage), ""));
-				m1.put("today", nullToString(String.valueOf(pkgToday), ""));
-				m1.put("expiryTime", nullToString(pkgExpiryTime, ""));
-				m1.put("days", nullToString(String.valueOf(pkgDays), ""));
-				m1.put("openTime", nullToString(pkgOpenTime, ""));
-				l1.add(m1);
-			}	//for (i=0; i<jsonEntries.size(); i++) {	//把每個人的電話號碼找出來比對
+			JSONArray jsonPackages = null;
+			try{
+				jsonPackages = (JSONArray) jsonObjectResponseBody.get("packages");
+				JSONObject jsonObjectPackage = null;
+				for (i=0; i<jsonPackages.size(); i++) {	//把每個人的userId找出來比對
+					jsonObjectPackage = (JSONObject) jsonPackages.get(i);
+					pkgPackageId = (Long)jsonObjectPackage.get("packageId");
+					pkgProductId = (Long)jsonObjectPackage.get("productId");
+					pkgStatus = (Long)jsonObjectPackage.get("status");
+					pkgTotal = (Long)jsonObjectPackage.get("total")/1000000;
+					pkgUsage = (Long)jsonObjectPackage.get("usage")/1000000;
+					pkgToday = (Long)jsonObjectPackage.get("today")/1000000;
+					pkgExpiryTime = (String) jsonObjectPackage.get("expiryTime");
+					//SCT時區是GMT+8，轉為client端的timezone
+					if (beEmpty(timezone)) timezone = "0";
+					timezone = String.valueOf(Long.parseLong("-8") + Long.parseLong(timezone));
+					pkgExpiryTime = changeTimezoneForADate(pkgExpiryTime, gcDateFormatDashYMDTime, gcDateFormatDashYMDTime, timezone);
+					pkgDays = (Long)jsonObjectPackage.get("days");
+					pkgOpenTime = (String) jsonObjectPackage.get("openTime");
+					//SCT時區是GMT+8，轉為client端的timezone
+					pkgOpenTime = changeTimezoneForADate(pkgOpenTime, gcDateFormatDashYMDTime, gcDateFormatDashYMDTime, timezone);
+					m1 = new HashMap();
+					m1.put("packageId", nullToString(String.valueOf(pkgPackageId), ""));
+					m1.put("productId", nullToString(String.valueOf(pkgProductId), ""));
+					m1.put("packageStatus", nullToString(String.valueOf(pkgStatus), ""));
+					m1.put("totalDataVolume", nullToString(String.valueOf(pkgTotal), ""));
+					m1.put("allUsedVolume", nullToString(String.valueOf(pkgUsage), ""));
+					m1.put("todayUsedVolume", nullToString(String.valueOf(pkgToday), ""));
+					m1.put("expiryTime", nullToString(pkgExpiryTime, ""));
+					m1.put("validityDays", nullToString(String.valueOf(pkgDays), ""));
+					m1.put("firstUsageTime", nullToString(pkgOpenTime, ""));
+					l1.add(m1);
+				}	//for (i=0; i<jsonEntries.size(); i++) {	//把每個人的電話號碼找出來比對
+			}catch (Exception e){
+				writeLog("error", "Exception when parse SCT server response: " + e.toString());
+			}
 			obj.put("packages", l1);
 			sResponse = obj.toString();
 			writeLog("debug", "Respond to client: " + sResponse);
-		}
+		}	//if (resResult!=0){	//失敗
 	}catch (Exception e){
 		obj=new JSONObject();
 		obj.put("resultCode", gcResultCodeApiExecutionFail);

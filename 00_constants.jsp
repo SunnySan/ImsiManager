@@ -3,7 +3,7 @@
 
 //Supplier參數
 public static final String	gcSCTUri								= "https://sim.npnchina.com/api/v1/imsi_query";
-public static final String	gcSCTAccount							= "taisys";
+public static final String	gcSCTAccount							= "TAISYS";
 public static final String	gcSCTKey								= "a02779170f1245d7dc03e39b0f1dd818";
 
 
@@ -35,6 +35,10 @@ public static final String	gcResultCodePasswordIsIncorrect			= "00012";
 public static final String	gcResultTextPasswordIsIncorrect			= "Password is incorrect.";
 public static final String	gcResultCodeApiExecutionFail			= "10001";
 public static final String	gcResultTextApiExecutionFail			= "API execution failed";
+public static final String	gcResultCodeApiNotOurImsi				= "10002";
+public static final String	gcResultTextApiNotOurImsi				= "This IMSI is not ours";
+public static final String	gcResultCodeApiInvalidImsi				= "10003";
+public static final String	gcResultTextApiInvalidImsi				= "Invalid IMSI";
 
 public static final String	gcResultCodeDBTimeout					= "99001";
 public static final String	gcResultTextDBTimeout					= "資料庫連線失敗或逾時!";

@@ -55,11 +55,22 @@ if (beEmpty(contentStr)){
 }
 
 String		imsi			= "";
+String		iccid			= "";
+
 try{
 	JSONParser	parser			= new JSONParser();
 	Object		objBody			= parser.parse(contentStr);
 	JSONObject	jsonObjectBody	= (JSONObject) objBody;
-	imsi = (String) jsonObjectBody.get("imsi");
+	try{
+		imsi = (String) jsonObjectBody.get("imsi");
+	}catch (Exception e){
+		imsi = "";
+	}
+	try{
+		iccid = (String) jsonObjectBody.get("iccid");
+	}catch (Exception e){
+		iccid = "";
+	}
 }catch (Exception e) {
 	writeLog("error", "Parse request body json error: " + e.toString());
 	writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
@@ -73,7 +84,7 @@ try{
 String	sResultCode		= gcResultCodeSuccess;
 String	sResultText		= gcResultTextSuccess;
 
-if (beEmpty(accountId) || beEmpty(timestamp) || beEmpty(imsi) || beEmpty(signature)){
+if (beEmpty(accountId) || beEmpty(timestamp) || (beEmpty(imsi) && beEmpty(iccid)) || beEmpty(signature)){
 	writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
 	obj.put("resultCode", gcResultCodeParametersNotEnough);
 	obj.put("resultText", gcResultTextParametersNotEnough);
@@ -85,6 +96,7 @@ if (beEmpty(accountId) || beEmpty(timestamp) || beEmpty(imsi) || beEmpty(signatu
 String	USERS_JSON_FILE		= application.getRealPath("/00_users.json");
 String	SUPPLIERS_JSON_FILE	= application.getRealPath("/00_suppliers.json");
 JSONObject jsonObjectUser	= getUserProfileJson(USERS_JSON_FILE, accountId);
+String	timezone			= "";
 
 if (jsonObjectUser==null){
 	writeLog("debug", gcResultCodeNoLoginInfoFound + ":" + gcResultTextNoLoginInfoFound);
@@ -96,6 +108,7 @@ if (jsonObjectUser==null){
 }else{
 	//驗證簽名是否正確
 	String userkey = (String) jsonObjectUser.get("userKey");
+	timezone = (String) jsonObjectUser.get("timezone");
 	if (!isSignatureValid(signature, accountId+timestamp+contentStr+userkey)){
 		writeLog("debug", "Invalid signature return " + gcResultCodeInvalidSignature + ":" + gcResultTextInvalidSignature);
 		obj.put("resultCode", gcResultCodeInvalidSignature);
@@ -117,9 +130,9 @@ if (!isTimestampValid(timestamp, gcDateFormatDashYMDTime)){
 }
 
 
-String imsiSupplier = getImsiSupplier(SUPPLIERS_JSON_FILE, imsi);
+String imsiSupplier = getImsiSupplier(SUPPLIERS_JSON_FILE, imsi, iccid);
 if (beEmpty(imsiSupplier)){
-	writeLog("debug", "No supplier API can be found for IMSI " + imsi + ", return " + gcResultCodeImsiApiNotSupport + ":" + gcResultTextImsiApiNotSupport);
+	writeLog("debug", "No supplier API can be found for IMSI= " + imsi + ", ICCID= " + iccid + ", return " + gcResultCodeImsiApiNotSupport + ":" + gcResultTextImsiApiNotSupport);
 	obj.put("resultCode", gcResultCodeImsiApiNotSupport);
 	obj.put("resultText", gcResultTextImsiApiNotSupport);
 	out.print(obj);
@@ -128,7 +141,7 @@ if (beEmpty(imsiSupplier)){
 }
 
 String	imsiProfile	= "";
-if (imsiSupplier.equals("sct")) imsiProfile = imsiProfileQueryForSCT(imsi);
+if (imsiSupplier.equals("sct")) imsiProfile = imsiProfileQueryForSCT(imsi, timezone);
 
 if (beEmpty(imsiProfile)){
 	obj.put("resultCode", gcResultCodeApiExecutionFail);

@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="./bower_components/font-awesome/css/font-awesome.min.css">
   <!-- Ionicons -->
   <link rel="stylesheet" href="./bower_components/Ionicons/css/ionicons.min.css">
+  <!-- DataTables -->
+  <link rel="stylesheet" href="./bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css">
   <!-- Theme style -->
   <link rel="stylesheet" href="./dist/css/AdminLTE.min.css">
   <!-- AdminLTE Skins. Choose a skin from the css/skins
@@ -146,7 +148,11 @@
 					<form role="form" id="mainForm">
 						<div class="form-group">
 							<label>IMSI</label>
-							<input type="text" id="imsi" class="form-control" placeholder="Enter ..." value="525053094060008">
+							<input type="text" id="imsi" class="form-control" placeholder="Enter IMSI..." value="525053094060008">
+						</div>
+						<div class="form-group">
+							<label>ICCID</label>
+							<input type="text" id="iccid" class="form-control" placeholder="Enter ICCID..." value="">
 						</div>
 						<div class="form-group">
 							<button type="button" class="btn btn-primary" onclick="doQuery();">Query</button>
@@ -156,10 +162,15 @@
 
 				<div class="box-footer">
 				</div><!-- /.box-footer-->
+
+				<!-- Loading (remove the following to stop the loading)-->
+				<div class="overlay" style="display:none;">
+					<i class="fa fa-refresh fa-spin"></i>
+				</div>
 			</div><!-- /.box -->
 
 			<!-- Default box -->
-			<div class="box">
+			<div id="simInfoBox" class="box">
 				<div class="box-header with-border">
 					<h3 class="box-title">IMSI Information</h3>
 					<div class="box-tools pull-right">
@@ -172,12 +183,45 @@
 
 				<div class="box-body">
 					<div class="form-group">
-						<label>IMSI Status:&nbsp;<span id="imsiStatus"></span></label>
+						<h2>IMSI Status:&nbsp;<span id="imsiStatus" style="color:#FF0000;"></span></h2>
 					</div>
+
+					<table id="simInfoTable" class="table table-bordered table-hover">
+						<thead>
+							<tr>
+								<th>Package ID</th>
+								<th>Status</th>
+								<th>Total Vol. (MB)</th>
+								<th>Used Vol. (MB)</th>
+								<th>First usage time</th>
+								<th>Expiry time</th>
+								<th>Validity days</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+						<tfoot>
+							<tr>
+								<th>Package ID</th>
+								<th>Status</th>
+								<th>Total Vol. (MB)</th>
+								<th>Used Vol. (MB)</th>
+								<th>First usage time</th>
+								<th>Expiry time</th>
+								<th>Validity days</th>
+							</tr>
+						</tfoot>
+					</table>                	
+
 				</div><!-- /.box-body -->
 
 				<div class="box-footer">
 				</div><!-- /.box-footer-->
+
+				<!-- Loading (remove the following to stop the loading)-->
+				<div class="overlay" style="display:none;">
+					<i class="fa fa-refresh fa-spin"></i>
+				</div>
 			</div><!-- /.box -->
 		
 		</section><!-- /.content -->
@@ -200,6 +244,8 @@
 
 <script src="./bower_components/jquery/dist/jquery.min.js"></script><!-- jQuery 3 -->
 <script src="./bower_components/bootstrap/dist/js/bootstrap.min.js"></script><!-- Bootstrap 3.3.7 -->
+<script src="./bower_components/datatables.net/js/jquery.dataTables.min.js"></script><!-- DataTables -->
+<script src="./bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script><!-- DataTables -->
 <script src="./bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script><!-- SlimScroll -->
 <script src="./bower_components/fastclick/lib/fastclick.js"></script><!-- FastClick -->
 <script src="./dist/js/adminlte.min.js"></script><!-- AdminLTE App -->
@@ -209,6 +255,9 @@
 <script type="text/javascript" src="js/util.js"></script>
 
 <script>
+	var table = null;
+	var tableData = null;
+
 	$(document).ready(function () {
 		pageInit();
 		//$('.sidebar-menu').tree()
@@ -218,34 +267,117 @@
 				doQuery();
 			}
 		});
+		/*
+		$('#simInfoTable').DataTable({
+			'paging'      : true,
+			'lengthChange': false,
+			'searching'   : false,
+			'ordering'    : true,
+			'info'        : true,
+			'autoWidth'   : false
+		})
+		*/
 	})
 	
 	function doQuery(){
 		event.preventDefault();
 		var sData = "";
+		var s = "";
+		var tmp = "";
+
 		var imsi = $('#imsi').val();
+		var iccid = $('#iccid').val();
 		
 		$('#imsiStatus').text("");
-		if (beEmpty(imsi)){
-			msgBox2("Please enter IMSI number");
+		if ($.fn.dataTable.isDataTable(table) ) table.clear().draw();
+		
+		if (beEmpty(imsi) && beEmpty(iccid)){
+			msgBox2("Please enter IMSI or ICCID number");
 			return;
 		}
 		
+		$('.overlay').show();
+		
 		sData = "imsi=" + imsi;
+		sData += "&iccid=" + iccid;
 		getDataFromServer("ajaxDoImsiQuery.jsp", sData, "json", function(data){
 			if (!data.resultCode || !data.resultText){
+				$('.overlay').hide();
 				msgBox2("Unable to get process result!");
 				return;
 			}else{
 				if (data.resultCode=="00000"){
 					//msgBox2(JSON.stringify(data));
-					$('#imsiStatus').text(data.imsiStatus);
+					$('#imsiStatus').text(translateImsiStatus(data.imsiStatus));
+
+					s = "";
+					$.each( data.packages, function(i, r) {
+						r.packageStatus = translatePackageStatus(r.packageStatus);
+						r.totalDataVolume = toCurrency(r.totalDataVolume);
+						r.allUsedVolume = toCurrency(r.allUsedVolume);
+					});	//$.each( data.orders, function(i, r) {
+					
+					tableData = data;
+					if ($.fn.dataTable.isDataTable(table) ){
+						table.destroy();
+					}
+					table = $('#simInfoTable').DataTable( {
+						'paging'      : true,
+						'lengthChange': false,
+						'searching'   : false,
+						'ordering'    : true,
+						'info'        : true,
+						'autoWidth'   : true,
+						responsive: true,
+						columnDefs: [
+							{ responsivePriority: 1, targets: 2 },
+							{ responsivePriority: 1, targets: 3 }
+						],
+						data: tableData.packages,
+						columns: [
+							{ data: 'packageId' },
+							{ data: 'packageStatus' },
+							{ data: 'totalDataVolume' },
+							{ data: 'allUsedVolume' },
+							{ data: 'firstUsageTime' },
+							{ data: 'expiryTime' },
+							{ data: 'validityDays' }
+						],
+						order: [[ 4, 'desc' ]]
+					} );
+
+					$('html, body').animate({
+						scrollTop: $("#simInfoBox").offset().top
+					}, 1000);
+
 				}else{
 					msgBox2("Process failed:<br>" + data.resultText);
 				}
+				$('.overlay').hide();
 			}
 
 		});	//getDataFromServer("xxx.jsp", sData, "json", function(data){
+	}
+	
+	function translateImsiStatus(status){
+		var s = status;
+		if (status=="0") s = "No package";
+		if (status=="1") s = "Not activated";
+		if (status=="2") s = "Activated";
+		if (status=="3") s = "Freeze";
+		if (status=="4") s = "Destroyed";
+		if (status=="9") s = "Suspended";
+		return s;
+	}
+
+	function translatePackageStatus(status){
+		var s = status;
+		if (status=="0") s = "Inactive";
+		if (status=="1") s = "Activated";
+		if (status=="2") s = "Expired";
+		if (status=="3") s = "Closed";
+		if (status=="4") s = "Closing";
+		return s;
 	}
 </script>
 

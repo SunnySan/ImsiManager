@@ -27,13 +27,14 @@ JSONObject obj=new JSONObject();
 /************************************呼叫範例*******************************
 ************************************呼叫範例*******************************/
 String	imsi	= nullToString(request.getParameter("imsi"), "");
+String	iccid	= nullToString(request.getParameter("iccid"), "");
 
-writeLog("debug", "Receive IMSI query request, imsi= " + imsi);
+writeLog("debug", "Receive IMSI/ICCID query request, imsi= " + imsi + ", ICCID= " + iccid);
 
 String	sResultCode		= gcResultCodeSuccess;
 String	sResultText		= gcResultTextSuccess;
 
-if (beEmpty(imsi)){
+if (beEmpty(imsi) && beEmpty(iccid)){
 	writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
 	obj.put("resultCode", gcResultCodeParametersNotEnough);
 	obj.put("resultText", gcResultTextParametersNotEnough);
@@ -62,7 +63,7 @@ if (request.getServerPort()==80){
 }
 */
 
-writeLog("debug", "My IMSI query API URL= " + imsiQueryApiUri);
+writeLog("debug", "My IMSI/ICCID query API URL= " + imsiQueryApiUri);
 
 String	USERS_JSON_FILE		= application.getRealPath("/00_users.json");
 JSONObject jsonObjectUser	= getUserProfileJson(USERS_JSON_FILE, sLoginUserAccountId);
@@ -83,6 +84,7 @@ String	key			= userkey;
 String	timestamp	= getDateTimeNowGMT(gcDateFormatDashYMDTime);
 JSONObject objTemp=new JSONObject();
 objTemp.put("imsi", imsi);
+objTemp.put("iccid", iccid);
 String	body	= objTemp.toString();
 String	signature	= md5(account+timestamp+body+key);
 

@@ -4,6 +4,7 @@
       "userId": "Sunny",
       "userKey": "12345678",
       "userPassword": "123456",
+      "timezone": "+8",
       "userType": "9",
       "imsis": [
         {
@@ -16,6 +17,7 @@
       "userId": "Banton",
       "userKey": "12345678",
       "userPassword": "123456",
+      "timezone": "+8",
       "userType": "0",
       "imsis": [
         {
