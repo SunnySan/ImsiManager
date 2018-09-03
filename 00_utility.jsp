@@ -591,14 +591,14 @@ public String imsiProfileQueryForSCT(String imsi, String timezone){
 			List	l1	= new LinkedList();
 			Map		m1	= null;
 			int		i	= 0;
-			Long		pkgPackageId	;
-			Long		pkgProductId	;
-			Long		pkgStatus		;
-			Long		pkgTotal		;
-			Long		pkgUsage		;
-			Long		pkgToday		;
+			Long	pkgPackageId;
+			Long	pkgProductId;
+			Long	pkgStatus;
+			Long	pkgTotal;
+			Long	pkgUsage;
+			Long	pkgToday;
 			String	pkgExpiryTime	= "";
-			Long		pkgDays			;
+			Long	pkgDays;
 			String	pkgOpenTime		= "";
 			JSONArray jsonPackages = null;
 			try{
