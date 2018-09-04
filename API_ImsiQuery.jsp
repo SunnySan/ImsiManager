@@ -11,6 +11,8 @@
 
 <%@include file="00_constants.jsp"%>
 <%@include file="00_utility.jsp"%>
+<%@include file="00_supplier_API_SCT.jsp"%>
+<%@include file="00_supplier_API_CUHK.jsp"%>
 
 <%
 request.setCharacterEncoding("utf-8");
@@ -142,6 +144,7 @@ if (beEmpty(imsiSupplier)){
 
 String	imsiProfile	= "";
 if (imsiSupplier.equals("sct")) imsiProfile = imsiProfileQueryForSCT(imsi, timezone);
+if (imsiSupplier.equals("cuhk")) imsiProfile = imsiProfileQueryForCUHK(imsi, timezone);
 
 if (beEmpty(imsiProfile)){
 	obj.put("resultCode", gcResultCodeApiExecutionFail);

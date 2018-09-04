@@ -2,13 +2,23 @@
 <%!
 
 //Supplier參數
-public static final String	gcSCTUri								= "https://sim.npnchina.com/api/v1/imsi_query";
+public static final String	gcSCTUri								= "https://sim.npnchina.com/api/v1/";
 public static final String	gcSCTAccount							= "TAISYS";
 public static final String	gcSCTKey								= "a02779170f1245d7dc03e39b0f1dd818";
 
+public static final String	gcCUHKUri								= "http://203.160.90.245:8080/httpApi/v1/taisys/";
+public static final String[]	gcCUHK3DESKey						= {
+																		"F238C1BD34184AA5A6C89A954A6AC5ECF64CCB0EFB554E22",
+																		"033623A038BA4303A9486AE1C86DD06F881D17B8669E49F4", 
+																		"5E8A8E5EB75940729856578FADCC8D1AAD2FA78A2AE44B97", 
+																		"7212E64F082C4593BD61A628392897B592A1A01051CF4679",
+																		"AAACFD4762D8495E85BAC795E9A04E585593DC3B9AB54881"};
+public static final String	gcCUHKAuthKey							= "FaTyLS63";
+
 
 //系統參數
-public static final String	gcSystemUri									= "https://cms.gslssd.com/ImsiManager/";
+//public static final String	gcSystemUri									= "http://cms.gslssd.com/ImsiManager/";
+public static final String	gcSystemUri									= "http://127.0.0.1:8088/ImsiManager/";
 
 /*****************************************************************************/
 
@@ -30,15 +40,15 @@ public static final String	gcResultTextInvalidSignature			= "Invalid signature";
 public static final String	gcResultCodeRequestTimestampIsInvalid	= "00010";
 public static final String	gcResultTextRequestTimestampIsInvalid	= "Timestamp is invalid";
 public static final String	gcResultCodeImsiApiNotSupport			= "00011";
-public static final String	gcResultTextImsiApiNotSupport			= "There is no API for this IMSI";
+public static final String	gcResultTextImsiApiNotSupport			= "There is no API for this IMSI/ICCID";
 public static final String	gcResultCodePasswordIsIncorrect			= "00012";
 public static final String	gcResultTextPasswordIsIncorrect			= "Password is incorrect.";
 public static final String	gcResultCodeApiExecutionFail			= "10001";
 public static final String	gcResultTextApiExecutionFail			= "API execution failed";
 public static final String	gcResultCodeApiNotOurImsi				= "10002";
-public static final String	gcResultTextApiNotOurImsi				= "This IMSI is not ours";
+public static final String	gcResultTextApiNotOurImsi				= "This IMSI/ICCID is not ours";
 public static final String	gcResultCodeApiInvalidImsi				= "10003";
-public static final String	gcResultTextApiInvalidImsi				= "Invalid IMSI";
+public static final String	gcResultTextApiInvalidImsi				= "Invalid IMSI/ICCID";
 
 public static final String	gcResultCodeDBTimeout					= "99001";
 public static final String	gcResultTextDBTimeout					= "資料庫連線失敗或逾時!";
@@ -61,5 +71,6 @@ public static final String	gcDateFormatYMD							= "yyyyMMdd";
 public static final String	gcDateFormatSlashYMD					= "yyyy/MM/dd";
 public static final String	gcDateFormatdashYMD						= "yyyy-MM-dd";
 public static final String	gcDateFormatSlashYM						= "yyyy/MM";
+public static final String	gcDateFormatDateAndTime					= "yyyyMMddHHmmss";
 
 %>

@@ -6,9 +6,14 @@
       "supplier": "sct"
     },
     {
-      "imsiStart": "42501",
+      "imsiStart": "14010",
       "iccidStart": "",
       "supplier": "sct"
+    },
+    {
+      "imsiStart": "4540700192",
+      "iccidStart": "",
+      "supplier": "cuhk"
     },
     {
       "imsiStart": "",

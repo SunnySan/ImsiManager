@@ -135,6 +135,7 @@
 				<h4><i class="icon fa fa-info"></i>&nbsp;Usage</h4>
 				<ol>
 					<li>Input IMSI or ICCID number and click Query button.</li>
+					<li>CDR information only provide data usage for the last 30 days.</li>
 				</ol>
 			</div>
               		
@@ -188,13 +189,40 @@
 				</div><!-- /.box-header -->
 
 				<div class="box-body">
-					<div class="form-group">
-						<h3>IMSI Type:&nbsp;<span id="imsiType" style="color:#FF0000;"></span></h3>
-					</div>
-					<div class="form-group">
-						<h3>IMSI Status:&nbsp;<span id="imsiStatus" style="color:#FF0000;"></span></h3>
+					<div class="row">
+						<div class="col-md-4">
+							<div class="form-group">
+								<h4>IMSI:&nbsp;<span id="imsiNumber"></span></h4>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="form-group">
+								<h4>ICCID:&nbsp;<span id="iccidNumber"></span></h4>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="form-group">
+								<h4>MSISDN:&nbsp;<span id="msisdnNumber"></span></h4>
+							</div>
+						</div>
 					</div>
 
+					<div class="row">
+						<div class="col-md-4">
+							<div class="form-group">
+								<h4>IMSI Type:&nbsp;<span id="imsiType" style="color:#FF0000;"></span></h4>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="form-group">
+								<h4>IMSI Status:&nbsp;<span id="imsiStatus" style="color:#FF0000;"></span></h4>
+							</div>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<h4>Package list:</h4>
+					</div>
 					<table id="simInfoTable" class="table table-bordered table-hover">
 						<thead>
 							<tr>
@@ -318,6 +346,9 @@
 			}else{
 				if (data.resultCode=="00000"){
 					//msgBox2(JSON.stringify(data));
+					$('#imsiNumber').text(data.imsi);
+					$('#iccidNumber').text(data.iccid);
+					$('#msisdnNumber').text(data.msisdn);
 					$('#imsiStatus').text(translateImsiStatus(data.imsiStatus));
 
 					var imsiType = "";
@@ -397,6 +428,7 @@
 		if (status=="2") s = "Activated";
 		if (status=="3") s = "Freeze";	//going to be terminated
 		if (status=="4") s = "Terminated";
+		if (status=="5") s = "Pending for top-up";
 		if (status=="9") s = "Suspended";
 		return s;
 	}
