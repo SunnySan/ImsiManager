@@ -73,16 +73,16 @@ String	iccid			= (String) obj.get("iccid");
 String	timezone		= (String) obj.get("timezone");
 String	imsiSupplier	= (String) obj.get("imsiSupplier");
 
-String	imsiProfile		= "";
-if (imsiSupplier.equals("sct")) imsiProfile = imsiProfileQueryForSCT(imsi, timezone);
-if (imsiSupplier.equals("cuhk")) imsiProfile = imsiProfileQueryForCUHK(imsi, timezone);
+String	imsiCdr		= "";
+if (imsiSupplier.equals("sct")) imsiCdr = imsiCdrQueryForSCT(imsi, timezone);
+if (imsiSupplier.equals("cuhk")) imsiCdr = imsiCdrQueryForCUHK(imsi, timezone);
 
-if (beEmpty(imsiProfile)){
+if (beEmpty(imsiCdr)){
 	obj.put("resultCode", gcResultCodeApiExecutionFail);
 	obj.put("resultText", gcResultTextApiExecutionFail);
 	out.print(obj);
 }else{
-	out.print(imsiProfile);
+	out.print(imsiCdr);
 }
 
 %>

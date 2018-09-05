@@ -379,6 +379,97 @@ public String byte2Hex(byte b) {
 }
 
 /*********************************************************************************************************************/
+//驗證 HTTP request 資料是否合法，欄位是否有少
+public JSONObject validateHttpRequest(String accountId, String timestamp, String signature, String httpBody, String userProfile, String supplierProfile){
+	JSONObject	obj			= new JSONObject();
+	
+	String		imsi		= "";
+	String		iccid		= "";
+
+	if (beEmpty(httpBody)){
+		writeLog("info", "Request body is empty, quit...");
+		obj.put("resultCode", gcResultCodeParametersNotEnough);
+		obj.put("resultText", gcResultTextParametersNotEnough);
+		return obj;
+	}else{
+		writeLog("debug", "Request body= " + httpBody);
+	}
+
+	try{
+		JSONParser	parser			= new JSONParser();
+		Object		objBody			= parser.parse(httpBody);
+		JSONObject	jsonObjectBody	= (JSONObject) objBody;
+		try{
+			imsi = (String) jsonObjectBody.get("imsi");
+		}catch (Exception e){
+			imsi = "";
+		}
+		try{
+			iccid = (String) jsonObjectBody.get("iccid");
+		}catch (Exception e){
+			iccid = "";
+		}
+	}catch (Exception e) {
+		writeLog("error", "Parse request body json error: " + e.toString());
+		writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
+		obj.put("resultCode", gcResultCodeParametersNotEnough);
+		obj.put("resultText", gcResultTextParametersNotEnough);
+		return obj;
+	}
+
+	if (beEmpty(accountId) || beEmpty(timestamp) || (beEmpty(imsi) && beEmpty(iccid)) || beEmpty(signature)){
+		writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
+		obj.put("resultCode", gcResultCodeParametersNotEnough);
+		obj.put("resultText", gcResultTextParametersNotEnough);
+		return obj;
+	}
+	
+	JSONObject jsonObjectUser	= getUserProfileJson(userProfile, accountId);
+	String	timezone			= "";
+	
+	if (jsonObjectUser==null){
+		writeLog("debug", gcResultCodeNoLoginInfoFound + ":" + gcResultTextNoLoginInfoFound);
+		obj.put("resultCode", gcResultCodeNoLoginInfoFound);
+		obj.put("resultText", gcResultTextNoLoginInfoFound);
+		return obj;
+	}else{
+		//驗證簽名是否正確
+		String userkey = (String) jsonObjectUser.get("userKey");
+		timezone = (String) jsonObjectUser.get("timezone");
+		if (!isSignatureValid(signature, accountId+timestamp+httpBody+userkey)){
+			writeLog("debug", "Invalid signature return " + gcResultCodeInvalidSignature + ":" + gcResultTextInvalidSignature);
+			obj.put("resultCode", gcResultCodeInvalidSignature);
+			obj.put("resultText", gcResultTextInvalidSignature);
+			return obj;
+		}
+	}
+
+	if (!isTimestampValid(timestamp, gcDateFormatDashYMDTime)){
+		writeLog("debug", "Invalid timestamp return " + gcResultCodeRequestTimestampIsInvalid + ":" + gcResultTextRequestTimestampIsInvalid);
+		obj.put("resultCode", gcResultCodeRequestTimestampIsInvalid);
+		obj.put("resultText", gcResultTextRequestTimestampIsInvalid);
+		return obj;
+	}
+
+	String imsiSupplier = getImsiSupplier(supplierProfile, imsi, iccid);
+	if (beEmpty(imsiSupplier)){
+		writeLog("debug", "No supplier API can be found for IMSI= " + imsi + ", ICCID= " + iccid + ", return " + gcResultCodeImsiApiNotSupport + ":" + gcResultTextImsiApiNotSupport);
+		obj.put("resultCode", gcResultCodeImsiApiNotSupport);
+		obj.put("resultText", gcResultTextImsiApiNotSupport);
+		return obj;
+	}
+
+	obj.put("resultCode", gcResultCodeSuccess);
+	obj.put("resultText", gcResultTextSuccess);
+	obj.put("imsi", nullToString(imsi, ""));
+	obj.put("iccid", nullToString(iccid, ""));
+	obj.put("timezone", timezone);
+	obj.put("imsiSupplier", imsiSupplier);
+	
+	return obj;
+}	//public JSONObject validateHttpRequest(String accountId, String timestamp, String signature, String httpBody, String userProfile, String supplierProfile){
+
+/*********************************************************************************************************************/
 public JSONObject getUserProfileJson(String usersFile, String userId){
 	int			i					= 0;
 	String users = readFileContent(usersFile);

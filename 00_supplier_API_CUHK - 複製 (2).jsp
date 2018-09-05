@@ -49,48 +49,154 @@ public String imsiProfileQueryForCUHK(String imsi, String timezone){
 	String	httpReqEncoded = "";
 	String	httpRet = "";
 	String	sResponse	= "";
-	httpRet = sendRequestToCuhk(httpUrl, httpReq);
-	if (notEmpty(httpRet)){
-		sResponse = translateCUHKResponse(httpRet, timezone);
-		writeLog("debug", "Our translated data= " + sResponse);
+	try {
+		HttpApiCodec httpApiCodec = new HttpApiCodec();
+		method = new PostMethod(httpUrl);
+		httpReqEncoded = httpApiCodec.encode(httpReq);
+		//System.out.println("[HttpApi-Send] " + httpReqEncoded);
+		method.setRequestEntity(new StringRequestEntity(httpReqEncoded, "application/json", "UTF-8"));
+		method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, new DefaultHttpMethodRetryHandler());
+		client.executeMethod(method);
+		int statusCode = method.getStatusCode();
+		writeLog("debug", "CUHK response HTTP status code= " + String.valueOf(statusCode));
+		
+		// If status code is not 200, the response does not need to be decoded. 
+		if (200 != statusCode) {
+			httpRet = method.getResponseBodyAsString();
+			writeLog("debug", "CUHK response data= " + httpRet);
+			//System.out.println("[HttpApi-Recv] " + httpRet);
+		} else {
+			httpRet = method.getResponseBodyAsString();
+			writeLog("debug", "CUHK response encoded data= " + httpRet);
+			httpRet = httpApiCodec.decode(httpRet);
+			writeLog("debug", "CUHK response plain data= " + httpRet);	//成功取得回覆，例如： {"effTime":"20180521204023","expTime":"20501231235959","iccid":"8985207180017768550","imsi":"454070019242000","lifeCycle":"0","lifeCycleTime":"20180521204023","msisdn":"85213200000","planCode":"760008","retCode":"000000","retMesg":"Operation Successfully."}
+			sResponse = translateCUHKResponse(httpRet, timezone);
+			writeLog("debug", "Our translated data= " + sResponse);
+		}
+	} catch (UnsupportedEncodingException e) {
+		writeLog("error", "Exception when send data to CUHK, error= " + e.toString());
+		sResponse	= "";
+	} catch (HttpException e) {
+		writeLog("error", "Exception when send data to CUHK, error= " + e.toString());
+		sResponse	= "";
+	} catch (IOException e) {
+		writeLog("error", "Exception when send data to CUHK, error= " + e.toString());
+		sResponse	= "";
+	} catch (Exception e) {
+		writeLog("error", "Exception when send data to CUHK, error= " + e.toString());
+	} finally {
+		if (null != method) {
+			method.releaseConnection();
+		}
 	}
 
 	//如果有IMSI資料，就繼續尋找 Package 資料
 	if (notEmpty(sResponse) && sResponse.indexOf(gcResultCodeSuccess)>0){
 		httpUrl = gcCUHKUri + "qrypacklist";
-		httpRet = sendRequestToCuhk(httpUrl, httpReq);
-		if (notEmpty(httpRet)){
-			sResponse = translateCUHKPackageResponse(httpRet, sResponse, timezone);
-			writeLog("debug", "Get package info, Our translated data= " + sResponse);
-		}
+		writeLog("debug", "Send to CUHK to get package info, URL= " + httpUrl);
+		writeLog("debug", "Data to be sent to CUHK to get package info, request= " + httpReq);
+		client = new HttpClient();
+		method = null;
 
+		try {
+			HttpApiCodec httpApiCodec = new HttpApiCodec();
+			method = new PostMethod(httpUrl);
+			httpReqEncoded = httpApiCodec.encode(httpReq);
+			//System.out.println("[HttpApi-Send] " + httpReqEncoded);
+			method.setRequestEntity(new StringRequestEntity(httpReqEncoded, "application/json", "UTF-8"));
+			method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, new DefaultHttpMethodRetryHandler());
+			client.executeMethod(method);
+			int statusCode = method.getStatusCode();
+			writeLog("debug", "Get package info, CUHK response HTTP status code= " + String.valueOf(statusCode));
+			
+			// If status code is not 200, the response does not need to be decoded. 
+			if (200 != statusCode) {
+				httpRet = method.getResponseBodyAsString();
+				writeLog("debug", "Get package info, CUHK response data= " + httpRet);
+				//System.out.println("[HttpApi-Recv] " + httpRet);
+			} else {
+				httpRet = method.getResponseBodyAsString();
+				writeLog("debug", "Get package info, CUHK response encoded data= " + httpRet);
+				httpRet = httpApiCodec.decode(httpRet);
+				writeLog("debug", "Get package info, CUHK response plain data= " + httpRet);	//成功取得回覆，例如： {"packList":[{"effTime":"20180521204023","expTime":"20501231235959","packCode":"761005","packOrderSn":"11000079296247"},{"effTime":"20180521204023","expTime":"20501231235959","packCode":"761006","packOrderSn":"11000079296247"},{"effTime":"20180521204023","expTime":"20501231235959","packCode":"762000","packOrderSn":"11000079296247"}],"retCode":"000000","retMesg":"Operation Successfully."}
+				sResponse = translateCUHKPackageResponse(httpRet, sResponse, timezone);
+				writeLog("debug", "Get package info, Our translated data= " + sResponse);
+			}
+		} catch (UnsupportedEncodingException e) {
+			writeLog("error", "Get package info, exception when send data to CUHK, error= " + e.toString());
+			sResponse	= "";
+		} catch (HttpException e) {
+			writeLog("error", "Get package info, exception when send data to CUHK, error= " + e.toString());
+			sResponse	= "";
+		} catch (IOException e) {
+			writeLog("error", "Get package info, exception when send data to CUHK, error= " + e.toString());
+			sResponse	= "";
+		} catch (Exception e) {
+			writeLog("error", "Get package info, exception when send data to CUHK, error= " + e.toString());
+		} finally {
+			if (null != method) {
+				method.releaseConnection();
+			}
+		}
+	}	//if (notEmpty(sResponse) && sResponse.indexOf(gcResultCodeSuccess)>0){
+
+	//如果有IMSI資料，就繼續尋找 CDR 資料
+	if (notEmpty(sResponse) && sResponse.indexOf(gcResultCodeSuccess)>0){
+		httpUrl = gcCUHKUri + "qryusage";
+
+		obj=new JSONObject();
+		obj.put("authKey", gcCUHKAuthKey);
+		obj.put("imsi", imsi);
+		obj.put("beginDate", getThirtyDaysAgo(gcDateFormatYMD));
+		obj.put("endDate", getYesterday(gcDateFormatYMD));
+		httpReq	= obj.toString();
+
+		writeLog("debug", "Send to CUHK to get CDR info, URL= " + httpUrl);
+		writeLog("debug", "Data to be sent to CUHK to get CDR info, request= " + httpReq);
+		client = new HttpClient();
+		method = null;
+
+		try {
+			HttpApiCodec httpApiCodec = new HttpApiCodec();
+			method = new PostMethod(httpUrl);
+			httpReqEncoded = httpApiCodec.encode(httpReq);
+			//System.out.println("[HttpApi-Send] " + httpReqEncoded);
+			method.setRequestEntity(new StringRequestEntity(httpReqEncoded, "application/json", "UTF-8"));
+			method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, new DefaultHttpMethodRetryHandler());
+			client.executeMethod(method);
+			int statusCode = method.getStatusCode();
+			writeLog("debug", "Get CDR info, CUHK response HTTP status code= " + String.valueOf(statusCode));
+			
+			// If status code is not 200, the response does not need to be decoded. 
+			if (200 != statusCode) {
+				httpRet = method.getResponseBodyAsString();
+				writeLog("debug", "Get CDR info, CUHK response data= " + httpRet);
+				//System.out.println("[HttpApi-Recv] " + httpRet);
+			} else {
+				httpRet = method.getResponseBodyAsString();
+				writeLog("debug", "Get CDR info, CUHK response encoded data= " + httpRet);
+				httpRet = httpApiCodec.decode(httpRet);
+				writeLog("debug", "Get CDR info, CUHK response plain data= " + httpRet);	//成功取得回覆，例如： {"packList":[{"effTime":"20180521204023","expTime":"20501231235959","packCode":"761005","packOrderSn":"11000079296247"},{"effTime":"20180521204023","expTime":"20501231235959","packCode":"761006","packOrderSn":"11000079296247"},{"effTime":"20180521204023","expTime":"20501231235959","packCode":"762000","packOrderSn":"11000079296247"}],"retCode":"000000","retMesg":"Operation Successfully."}
+				sResponse = translateCUHKCDRResponse(httpRet, sResponse, timezone);
+				writeLog("debug", "Get CDR info, Our translated data= " + sResponse);
+			}
+		} catch (UnsupportedEncodingException e) {
+			writeLog("error", "Get CDR info, exception when send data to CUHK, error= " + e.toString());
+		} catch (HttpException e) {
+			writeLog("error", "Get CDR info, exception when send data to CUHK, error= " + e.toString());
+		} catch (IOException e) {
+			writeLog("error", "Get CDR info, exception when send data to CUHK, error= " + e.toString());
+		} catch (Exception e) {
+			writeLog("error", "Get CDR info, exception when send data to CUHK, error= " + e.toString());
+		} finally {
+			if (null != method) {
+				method.releaseConnection();
+			}
+		}
 	}	//if (notEmpty(sResponse) && sResponse.indexOf(gcResultCodeSuccess)>0){
 	
 	return sResponse;
 }	//public String imsiProfileQueryForCUHK(String imsi, String timezone){
-
-/*********************************************************************************************************************/
-public String imsiCdrQueryForCUHK(String imsi, String timezone){
-	String httpUrl = gcCUHKUri + "qryusage";
-	JSONObject obj=new JSONObject();
-	obj.put("authKey", gcCUHKAuthKey);
-	obj.put("imsi", imsi);
-	obj.put("beginDate", getThirtyDaysAgo(gcDateFormatYMD));
-	obj.put("endDate", getYesterday(gcDateFormatYMD));
-	String	httpReq	= obj.toString();
-
-	String	httpRet = "";
-	String	sResponse	= "";
-	httpRet = sendRequestToCuhk(httpUrl, httpReq);
-	if (notEmpty(httpRet)){
-		sResponse = translateCUHKCDRResponse(httpRet, timezone);
-		writeLog("debug", "Get CDR info, Our translated data= " + sResponse);
-	}
-	
-	return sResponse;
-}	//public String imsiCdrQueryForCUHK(String imsi, String timezone){
-
-/*********************************************************************************************************************/
 
 //將 CUHK 的回應資料轉成我們回覆給client端的資料
 public String translateCUHKResponse(String httpRet, String timezone){
@@ -112,7 +218,7 @@ public String translateCUHKResponse(String httpRet, String timezone){
 	}
 	
 	if (!retCode.equals("000000")){
-		if (retCode.equals("300004") || retCode.equals("300005") || retCode.equals("300011")){
+		if (retCode.equals("300004") || retCode.equals("300005")){
 			obj.put("resultCode", gcResultCodeApiInvalidImsi);
 			obj.put("resultText", gcResultTextApiInvalidImsi);
 		}else if (retCode.equals("300006")){
@@ -201,14 +307,14 @@ public String translateCUHKPackageResponse(String httpRet, String imsiResponse, 
 		try{
 			jsonPackages = (JSONArray) jsonObjectResponseBody.get("packList");
 			JSONObject jsonObjectPackage = null;
-			//SCT時區是GMT+8，轉為client端的timezone
-			if (beEmpty(timezone)) timezone = "0";
-			timezone = String.valueOf(Long.parseLong("-8") + Long.parseLong(timezone));
 			for (i=0; i<jsonPackages.size(); i++) {	//把每個人的userId找出來比對
 				jsonObjectPackage = (JSONObject) jsonPackages.get(i);
 				packCode = (String) jsonObjectPackage.get("packCode");
 				effTime = (String) jsonObjectPackage.get("effTime");
 				expTime = (String) jsonObjectPackage.get("expTime");
+				//SCT時區是GMT+8，轉為client端的timezone
+				if (beEmpty(timezone)) timezone = "0";
+				timezone = String.valueOf(Long.parseLong("-8") + Long.parseLong(timezone));
 				effTime = changeTimezoneForADate(effTime, gcDateFormatDateAndTime, gcDateFormatDashYMDTime, timezone);
 				expTime = changeTimezoneForADate(expTime, gcDateFormatDateAndTime, gcDateFormatDashYMDTime, timezone);
 				m1 = new HashMap();
@@ -236,9 +342,13 @@ public String translateCUHKPackageResponse(String httpRet, String imsiResponse, 
 /***************************************************************************************/
 
 //將 CUHK 的 CDR 回應資料轉成我們回覆給client端的資料
-public String translateCUHKCDRResponse(String httpRet, String timezone){
-	String	sResponse	= "";
-	JSONObject obj=new JSONObject();
+public String translateCUHKCDRResponse2(String httpRet, String imsiResponse, String timezone){
+	return "";
+}
+//將 CUHK 的 CDR 回應資料轉成我們回覆給client端的資料
+public String translateCUHKCDRResponse(String httpRet, String imsiResponse, String timezone){
+	String	sResponse	= imsiResponse;
+	JSONObject obj=null;
 	
 	JSONObject jsonObjectResponseBody = null;
 	String	retCode	= "";
@@ -250,9 +360,14 @@ public String translateCUHKCDRResponse(String httpRet, String timezone){
 		retCode	= (String) jsonObjectResponseBody.get("retCode");
 		if (beEmpty(retCode)) return sResponse;
 
+		//將之前取得的IMSI資料String轉成JSON object
+		parser	= new JSONParser();
+		objResponseBody = parser.parse(imsiResponse);
+		obj = (JSONObject) objResponseBody;
+
 		if (!retCode.equals("000000")){
-			obj.put("resultCode", gcResultCodeApiExecutionFail);
-			obj.put("resultText", gcResultTextApiExecutionFail);
+			obj.put("resultCodeCDR", gcResultCodeApiExecutionFail);
+			obj.put("resultTextCDR", gcResultTextApiExecutionFail);
 			sResponse = obj.toString();
 			return sResponse;
 		}
@@ -263,8 +378,8 @@ public String translateCUHKCDRResponse(String httpRet, String timezone){
 	
 
 	if (retCode.equals("000000")){
-		obj.put("resultCode", gcResultCodeSuccess);
-		obj.put("resultText", gcResultTextSuccess);
+		obj.put("resultCodeCDR", gcResultCodeSuccess);
+		obj.put("resultTextCDR", gcResultTextSuccess);
 		List	l1	= new LinkedList();
 		Map		m1	= null;
 		int		i	= 0;
@@ -291,69 +406,10 @@ public String translateCUHKCDRResponse(String httpRet, String timezone){
 		}
 		obj.put("cdrs", l1);
 		sResponse = obj.toString();
-		writeLog("debug", "Respond CDR to client: " + sResponse);
+		writeLog("debug", "Respond to client(include CDR): " + sResponse);
 	}
 	return sResponse;
-}	//public String translateCUHKCDRResponse(String httpRet, String timezone){
-
-
-/*****************************************************************************/
-
-//呼叫 CUHK API 並取得回覆資料
-public String sendRequestToCuhk(String uri, String body){
-	writeLog("debug", "Send to CUHK, URL= " + uri);
-	writeLog("debug", "Data to be sent to CUHK, request= " + body);
-	
-	HttpClient client = new HttpClient();
-	PostMethod method = null;
-	String	httpReqEncoded = "";
-	String	httpRet = "";
-	String	sResponse	= "";
-	try {
-		HttpApiCodec httpApiCodec = new HttpApiCodec();
-		method = new PostMethod(uri);
-		httpReqEncoded = httpApiCodec.encode(body);
-		//System.out.println("[HttpApi-Send] " + httpReqEncoded);
-		method.setRequestEntity(new StringRequestEntity(httpReqEncoded, "application/json", "UTF-8"));
-		method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, new DefaultHttpMethodRetryHandler());
-		client.executeMethod(method);
-		int statusCode = method.getStatusCode();
-		writeLog("debug", "CUHK response HTTP status code= " + String.valueOf(statusCode));
-		
-		// If status code is not 200, the response does not need to be decoded. 
-		if (200 != statusCode) {
-			httpRet = method.getResponseBodyAsString();
-			writeLog("debug", "CUHK response data= " + httpRet);
-			//System.out.println("[HttpApi-Recv] " + httpRet);
-		} else {
-			httpRet = method.getResponseBodyAsString();
-			writeLog("debug", "CUHK response encoded data= " + httpRet);
-			httpRet = httpApiCodec.decode(httpRet);
-			writeLog("debug", "CUHK response plain data= " + httpRet);	//成功取得回覆，例如： {"effTime":"20180521204023","expTime":"20501231235959","iccid":"8985207180017768550","imsi":"454070019242000","lifeCycle":"0","lifeCycleTime":"20180521204023","msisdn":"85213200000","planCode":"760008","retCode":"000000","retMesg":"Operation Successfully."}
-			sResponse = httpRet;
-		}
-	} catch (UnsupportedEncodingException e) {
-		writeLog("error", "Exception when send data to CUHK, error= " + e.toString());
-		sResponse	= "";
-	} catch (HttpException e) {
-		writeLog("error", "Exception when send data to CUHK, error= " + e.toString());
-		sResponse	= "";
-	} catch (IOException e) {
-		writeLog("error", "Exception when send data to CUHK, error= " + e.toString());
-		sResponse	= "";
-	} catch (Exception e) {
-		writeLog("error", "Exception when send data to CUHK, error= " + e.toString());
-	} finally {
-		if (null != method) {
-			method.releaseConnection();
-		}
-	}
-	
-	return sResponse;
-}	//public JSONObject sendRequestToCuhk(String uri, String body){
-
-/*****************************************************************************/
-
+}	//public String translateCUHKResponse(String httpRet){
 
 
 

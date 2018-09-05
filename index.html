@@ -20,6 +20,8 @@
   <!-- AdminLTE Skins. Choose a skin from the css/skins
        folder instead of downloading all of them to reduce the load. -->
   <link rel="stylesheet" href="./dist/css/skins/skin-blue.min.css">
+  <!-- iCheck -->
+  <link rel="stylesheet" href="./plugins/iCheck/square/blue.css">
 
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -161,6 +163,11 @@
 							<label>ICCID</label>
 							<input type="text" id="iccid" class="form-control" placeholder="Enter ICCID..." value="">
 						</div>
+						<div class="checkbox icheck">
+							<label>
+								<input type="checkbox" id="chkCdr"> Include CDR information
+							</label>
+						</div>
 						<div class="form-group">
 							<button type="button" class="btn btn-primary" onclick="doQuery();">Query</button>
 						</div>
@@ -275,7 +282,7 @@
 
 				<div class="box-body">
 					<div class="row">
-						<div class="col-md-6">
+						<div class="col-md-12">
 							<div class="form-group">
 								<h4>CDR query result:&nbsp;<span id="cdrResult" style="color:#FF0000;"></span></h4>
 							</div>
@@ -340,6 +347,7 @@
 <script src="./bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script><!-- SlimScroll -->
 <script src="./bower_components/fastclick/lib/fastclick.js"></script><!-- FastClick -->
 <script src="./dist/js/adminlte.min.js"></script><!-- AdminLTE App -->
+<script src="./plugins/iCheck/icheck.min.js"></script><!-- iCheck -->
 
 <script type="text/javascript" src="js/jquery.cookie.js"></script>
 <script type="text/javascript" src="js/util.js"></script>
@@ -347,11 +355,19 @@
 <script>
 	var packageTable = null;
 	var cdrTable = null;
-	var tableData = null;
+	var packageTableData = null;
+	var cdrTableData = null;
 
 	$(document).ready(function () {
 		pageInit();
 		//$('.sidebar-menu').tree()
+
+		$('input').iCheck({
+			checkboxClass: 'icheckbox_square-blue',
+			radioClass: 'iradio_square-blue',
+			increaseArea: '20%' /* optional */
+		});
+
 		$("#mainForm").keypress(function(event) {
 			if (event.which == 13) {
 				event.preventDefault();
@@ -400,8 +416,8 @@
 		sData += "&iccid=" + iccid;
 		getDataFromServer("ajaxDoImsiQuery.jsp", sData, "json", function(data){
 			if (!data.resultCode || !data.resultText){
-				$('.overlay').hide();
 				msgBox2("Unable to get process result!");
+				if (!$('#chkCdr').is(":checked")) $('.overlay').hide();
 				return;
 			}else{
 				if (data.resultCode=="00000"){
@@ -421,14 +437,17 @@
 						$('#imsiType').text(imsiType);
 						displayIoTImsiInfo(data);
 					}
-					displayCdrInfo(data);
 				}else{
 					msgBox2("Process failed:<br>" + data.resultText);
 				}
-				$('.overlay').hide();
+				if (!$('#chkCdr').is(":checked")) $('.overlay').hide();
 			}
 
 		});	//getDataFromServer("xxx.jsp", sData, "json", function(data){
+
+		if ($('#chkCdr').is(":checked")){
+			queryCdrInfo(imsi, iccid);
+		}
 	}
 	
 	function displayPrepaidImsiInfo(data){
@@ -438,7 +457,7 @@
 			r.allUsedVolume = toCurrency(r.allUsedVolume);
 		});	//$.each( data.orders, function(i, r) {
 		
-		tableData = data;
+		packageTableData = data;
 		if ($.fn.dataTable.isDataTable(packageTable) ){
 			packageTable.destroy();
 		}
@@ -454,7 +473,7 @@
 				{ responsivePriority: 1, targets: 2 },
 				{ responsivePriority: 1, targets: 3 }
 			],
-			data: tableData.packages,
+			data: packageTableData.packages,
 			columns: [
 				{ data: 'packageId' },
 				{ data: 'packageStatus' },
@@ -474,15 +493,38 @@
 			scrollTop: $("#simInfoBox").offset().top
 		}, 1000);
 
-		$('.overlay').hide();
+		if (!$('#chkCdr').is(":checked")) $('.overlay').hide();
 	}
 
 	function displayIoTImsiInfo(data){
 	}
 
+	function queryCdrInfo(imsi, iccid){
+		var sData = "";
+		sData = "imsi=" + imsi;
+		sData += "&iccid=" + iccid;
+		getDataFromServer("ajaxDoCdrQuery.jsp", sData, "json", function(data){
+			if (!data.resultCode || !data.resultText){
+				$('.overlay').hide();
+				$('#cdrResult').text("Unable to get CDR process result!");
+				msgBox2("Unable to get CDR process result!");
+				return;
+			}else{
+				if (data.resultCode=="00000"){
+					displayCdrInfo(data);
+				}else{
+					$('#cdrResult').text("Process CDR failed:" + data.resultText);
+					msgBox2("Process CDR failed:<br>" + data.resultText);
+				}
+				$('.overlay').hide();
+			}
+
+		});	//getDataFromServer("xxx.jsp", sData, "json", function(data){
+	}
+
 	function displayCdrInfo(data){
-		var cdrResultCode = data.resultCodeCDR;
-		var cdrResultText = data.resultTextCDR;
+		var cdrResultCode = data.resultCode;
+		var cdrResultText = data.resultText;
 
 		if (beEmpty(cdrResultCode) || cdrResultCode!="00000"){
 			if (beEmpty(cdrResultText)) cdrResultText = "Unable to query CDR, or there is no CDR query service for this IMSI.";
@@ -497,11 +539,11 @@
 			r.cdrUsage = toCurrency(r.cdrUsage);
 		});	//$.each( data.orders, function(i, r) {
 		
-		tableData = data;
-		if ($.fn.dataTable.isDataTable(cdrInfoTable) ){
-			cdrInfoTable.destroy();
+		cdrTableData = data;
+		if ($.fn.dataTable.isDataTable(cdrTable) ){
+			cdrTable.destroy();
 		}
-		cdrInfoTable = $('#cdrInfoTable').DataTable( {
+		cdrTable = $('#cdrInfoTable').DataTable( {
 			'paging'      : true,
 			'lengthChange': false,
 			'searching'   : false,
@@ -512,7 +554,7 @@
 			columnDefs: [
 				{ responsivePriority: 1, targets: 0 }
 			],
-			data: tableData.cdrs,
+			data: cdrTableData.cdrs,
 			columns: [
 				{ data: 'cdrDate' },
 				{ data: 'cdrUsage' },
