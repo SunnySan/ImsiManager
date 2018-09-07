@@ -417,6 +417,9 @@ public JSONObject validateHttpRequest(String accountId, String timestamp, String
 		return obj;
 	}
 
+	if (notEmpty(imsi))		imsi	= imsi.trim();
+	if (notEmpty(iccid))	iccid	= iccid.trim();
+
 	if (beEmpty(accountId) || beEmpty(timestamp) || (beEmpty(imsi) && beEmpty(iccid)) || beEmpty(signature)){
 		writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
 		obj.put("resultCode", gcResultCodeParametersNotEnough);

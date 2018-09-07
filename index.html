@@ -525,6 +525,7 @@
 	function displayCdrInfo(data){
 		var cdrResultCode = data.resultCode;
 		var cdrResultText = data.resultText;
+		var tmp = "";
 
 		if (beEmpty(cdrResultCode) || cdrResultCode!="00000"){
 			if (beEmpty(cdrResultText)) cdrResultText = "Unable to query CDR, or there is no CDR query service for this IMSI.";
@@ -537,6 +538,15 @@
 		
 		$.each( data.cdrs, function(i, r) {
 			r.cdrUsage = toCurrency(r.cdrUsage);
+			tmp = r.cdrLocation;
+			if (notEmpty(tmp)){
+				if (tmp.length<5){
+					tmp = "<a href='https://countrycode.org/" + tmp + "' target='_blank'>" + tmp + "</a>";
+				}else{
+					tmp = "<a href='https://en.wikipedia.org/wiki/Mobile_country_code' target='_blank'>" + tmp + "</a>";
+				}
+				r.cdrLocation = tmp;
+			}
 		});	//$.each( data.orders, function(i, r) {
 		
 		cdrTableData = data;

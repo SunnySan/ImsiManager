@@ -34,6 +34,9 @@ writeLog("debug", "Receive IMSI/ICCID query request, imsi= " + imsi + ", ICCID= 
 String	sResultCode		= gcResultCodeSuccess;
 String	sResultText		= gcResultTextSuccess;
 
+if (notEmpty(imsi))		imsi	= imsi.trim();
+if (notEmpty(iccid))	iccid	= iccid.trim();
+
 if (beEmpty(imsi) && beEmpty(iccid)){
 	writeLog("debug", "Respond error code= " + gcResultCodeParametersNotEnough + ",error message= " + gcResultTextParametersNotEnough);
 	obj.put("resultCode", gcResultCodeParametersNotEnough);
