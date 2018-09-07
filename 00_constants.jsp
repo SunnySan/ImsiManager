@@ -17,8 +17,8 @@ public static final String	gcCUHKAuthKey							= "FaTyLS63";
 
 
 //系統參數
-//public static final String	gcSystemUri									= "http://cms.gslssd.com/ImsiManager/";
-public static final String	gcSystemUri									= "http://127.0.0.1:8088/ImsiManager/";
+public static final String	gcSystemUri									= "https://cms.gslssd.com/ImsiManager/";
+//public static final String	gcSystemUri									= "http://127.0.0.1:8088/ImsiManager/";
 
 /*****************************************************************************/
 
@@ -28,13 +28,13 @@ public static final String	gcResultTextSuccess						= "Success";
 public static final String	gcResultCodeParametersNotEnough			= "00004";
 public static final String	gcResultTextParametersNotEnough			= "Parameter not enough";
 public static final String	gcResultCodeParametersValidationError	= "00005";
-public static final String	gcResultTextParametersValidationError	= "Parameter velidation failed";
+public static final String	gcResultTextParametersValidationError	= "Parameter validation failed";
 public static final String	gcResultCodeNoDataFound					= "00006";
 public static final String	gcResultTextNoDataFound					= "No data found";
 public static final String	gcResultCodeNoLoginInfoFound			= "00007";
 public static final String	gcResultTextNoLoginInfoFound			= "Login account not found or session expired, please login again";
 public static final String	gcResultCodeNoPriviledge				= "00008";
-public static final String	gcResultTextNoPriviledge				= "No priviledge";
+public static final String	gcResultTextNoPriviledge				= "No privilege";
 public static final String	gcResultCodeInvalidSignature			= "00009";
 public static final String	gcResultTextInvalidSignature			= "Invalid signature";
 public static final String	gcResultCodeRequestTimestampIsInvalid	= "00010";
@@ -42,7 +42,7 @@ public static final String	gcResultTextRequestTimestampIsInvalid	= "Timestamp is
 public static final String	gcResultCodeImsiApiNotSupport			= "00011";
 public static final String	gcResultTextImsiApiNotSupport			= "There is no API for this IMSI/ICCID";
 public static final String	gcResultCodePasswordIsIncorrect			= "00012";
-public static final String	gcResultTextPasswordIsIncorrect			= "Password is incorrect.";
+public static final String	gcResultTextPasswordIsIncorrect			= "Password is incorrect";
 public static final String	gcResultCodeApiExecutionFail			= "10001";
 public static final String	gcResultTextApiExecutionFail			= "API execution failed";
 public static final String	gcResultCodeApiNotOurImsi				= "10002";
