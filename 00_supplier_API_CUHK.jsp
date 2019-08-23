@@ -72,6 +72,7 @@ public String imsiProfileQueryForCUHK(String imsi, String timezone){
 /*********************************************************************************************************************/
 public String imsiCdrQueryForCUHK(String imsi, String timezone){
 	String httpUrl = gcCUHKUri + "qryusage";
+	writeLog("debug", "Try to query CDR info from CUHK, URL= " + httpUrl);
 	JSONObject obj=new JSONObject();
 	obj.put("authKey", gcCUHKAuthKey);
 	obj.put("imsi", imsi);
@@ -105,6 +106,7 @@ public String translateCUHKResponse(String httpRet, String timezone){
 		Object objResponseBody = parser.parse(httpRet);
 		jsonObjectResponseBody = (JSONObject) objResponseBody;
 		retCode	= (String) jsonObjectResponseBody.get("retCode");
+		writeLog("debug", "Parse 'retCode' = " + retCode);
 		if (beEmpty(retCode)) return "";
 	}catch(Exception e){
 		writeLog("error", "Exception when parse 'retCode' of CUHK response data, error= " + e.toString());

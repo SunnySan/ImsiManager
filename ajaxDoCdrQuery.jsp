@@ -29,7 +29,7 @@ JSONObject obj=new JSONObject();
 String	imsi	= nullToString(request.getParameter("imsi"), "");
 String	iccid	= nullToString(request.getParameter("iccid"), "");
 
-writeLog("debug", "Receive IMSI/ICCID query request, imsi= " + imsi + ", ICCID= " + iccid);
+writeLog("debug", "Receive IMSI/ICCID CDR query request, imsi= " + imsi + ", ICCID= " + iccid);
 
 String	sResultCode		= gcResultCodeSuccess;
 String	sResultText		= gcResultTextSuccess;

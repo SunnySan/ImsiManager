@@ -154,8 +154,17 @@ public String imsiCdrQueryForSCT(String imsi, String timezone){
 		int resResult = ((Long)jsonObjectResponseBody.get("result")).intValue();
 		obj=new JSONObject();
 		if (resResult!=0){	//失敗
-			obj.put("resultCode", gcResultCodeApiExecutionFail);
-			obj.put("resultText", gcResultTextApiExecutionFail);
+			sResponse = "";
+			if (resResult==139){
+				obj.put("resultCode", gcResultCodeApiNotOurImsi);
+				obj.put("resultText", gcResultTextApiNotOurImsi);
+			}else if (resResult==213){
+				obj.put("resultCode", gcResultCodeApiInvalidImsi);
+				obj.put("resultText", gcResultTextApiInvalidImsi);
+			}else{
+				obj.put("resultCode", gcResultCodeApiExecutionFail);
+				obj.put("resultText", gcResultTextApiExecutionFail);
+			}
 			sResponse = obj.toString();
 		}else{	//成功，把supplier回覆的內容轉成我們回覆給client端的格式
 			obj.put("resultCode", gcResultCodeSuccess);

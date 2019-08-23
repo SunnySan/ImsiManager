@@ -17,7 +17,7 @@ public static final String	gcCUHKAuthKey							= "FaTyLS63";
 
 
 //系統參數
-public static final String	gcSystemUri									= "https://cms.gslssd.com/ImsiManager/";
+public static final String	gcSystemUri									= "http://cms.gslssd.com/ImsiManager/";
 //public static final String	gcSystemUri									= "http://127.0.0.1:8088/ImsiManager/";
 
 /*****************************************************************************/

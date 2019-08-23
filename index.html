@@ -220,7 +220,7 @@
 								<h4>IMSI Type:&nbsp;<span id="imsiType" style="color:#FF0000;"></span></h4>
 							</div>
 						</div>
-						<div class="col-md-4">
+						<div class="col-md-8">
 							<div class="form-group">
 								<h4>IMSI Status:&nbsp;<span id="imsiStatus" style="color:#FF0000;"></span></h4>
 							</div>
@@ -417,6 +417,7 @@
 		getDataFromServer("ajaxDoImsiQuery.jsp", sData, "json", function(data){
 			if (!data.resultCode || !data.resultText){
 				msgBox2("Unable to get process result!");
+				$('#imsiStatus').text("Unable to get process result!");
 				if (!$('#chkCdr').is(":checked")) $('.overlay').hide();
 				return;
 			}else{
@@ -439,6 +440,7 @@
 					}
 				}else{
 					msgBox2("Process failed:<br>" + data.resultText);
+					$('#imsiStatus').text("Process failed:" + data.resultText);
 				}
 				if (!$('#chkCdr').is(":checked")) $('.overlay').hide();
 			}

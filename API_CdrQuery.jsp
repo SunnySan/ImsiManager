@@ -33,7 +33,7 @@ String 		accountId = nullToString(request.getHeader("IM-ACCOUNT"), "");
 String 		timestamp = nullToString(request.getHeader("IM-TIMESTAMP"), "");
 String 		signature = nullToString(request.getHeader("IM-SIGNATURE"), "");
 
-writeLog("debug", "Receive request header, accountId= " + accountId + ",timestamp= " + timestamp + ",signature= " + signature);
+writeLog("debug", "CDR query, receive request header, accountId= " + accountId + ",timestamp= " + timestamp + ",signature= " + signature);
 
 InputStream	is	= null;
 String		contentStr	= "";
